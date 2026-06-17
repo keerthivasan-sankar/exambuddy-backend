@@ -61,7 +61,8 @@ let usersCollection;
 let examsCollection;
 let messagesCollection;
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://kkeerthivasan811_db_user:exambuddy123@exambuddy-cluster.k780tqu.mongodb.net/exambuddy?retryWrites=true&w=majority';
+// ✅ CORRECT MongoDB URI with srv
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://kkeerthivasan811_db_user:exambuddy123@exambuddy-cluster.k78otqu.mongodb.net/exambuddy?retryWrites=true&w=majority&tls=true&ssl=true';
 
 async function connectDB() {
     try {
