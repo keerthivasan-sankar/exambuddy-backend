@@ -114,6 +114,11 @@ async function connectDB() {
     }
 }
 
+// ========== TEST ROUTE (FOR DEPLOYMENT DEBUG) ==========
+app.get('/', (req, res) => {
+    res.send('🚀 ExamBuddy API is running!');
+});
+
 // ========== UPLOAD ENDPOINT ==========
 app.post('/api/upload', upload.single('file'), async (req, res) => {
     try {
@@ -319,7 +324,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // ========== SERVE APP - MUST BE LAST ==========
-app.get('/', (req, res) => {
+app.get('/app', (req, res) => {
     res.sendFile(__dirname + '/ExamBuddy_Complete (2).html');
 });
 
