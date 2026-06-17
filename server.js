@@ -323,23 +323,18 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// ========== SERVE APP - MUST BE LAST ==========
-app.get('/app', (req, res) => {
-    res.sendFile(__dirname + '/ExamBuddy_Complete (2).html');
-});
-
 // ========== START SERVER ==========
 const PORT = process.env.PORT || 5000;
 
-// Start server - listen on all network interfaces for Railway
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n==========================================`);
-    console.log(`   🚀 EXAM BUDDY BACKEND READY!`);
-    console.log(`==========================================`);
+    console.log('\n========================================');
+    console.log('   🚀 EXAM BUDDY BACKEND READY!');
+    console.log('========================================');
     console.log(`   📍 http://0.0.0.0:${PORT}`);
     console.log(`   📤 http://0.0.0.0:${PORT}/api/upload`);
     console.log(`   ☁️  Cloudinary: Configured`);
-    console.log(`==========================================\n`);
-    // Connect to MongoDB in background (don't block server startup)
+    console.log('========================================\n');
+    
+    // Connect to MongoDB in background
     connectDB();
 });
