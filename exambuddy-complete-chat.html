@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamBuddy - Complete Multimedia Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        /* Header */
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.own {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 60%;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.own .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message-sender {
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .message.own .message-sender {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Text Message */
+        .message-text {
+            word-wrap: break-word;
+        }
+
+        /* Image Message */
+        .message-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .message-image:hover {
+            opacity: 0.8;
+            transform: scale(1.02);
+        }
+
+        /* Video Message */
+        .message-video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+
+        /* Location Message */
+        .location-card {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 8px 0;
+        }
+
+        .message.own .location-card {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .location-header {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .location-coords {
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .message.own .location-coords {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .location-btn {
+            width: 100%;
+            padding: 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .location-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        /* File Message */
+        .file-card {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            border: 1px solid #667eea;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .message.own .file-card {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .message.own .file-size {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Voice Message */
+        audio {
+            max-width: 250px;
+            border-radius: 20px;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .message.own .message-time {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .input-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.15);
+        }
+
+        .input-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Hidden Inputs */
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Text Input */
+        .text-input-area {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+            min-width: 200px;
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        #chatInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Recording Indicator */
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            color: #ff4444;
+            font-weight: 600;
+        }
+
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .recording-dot {
+            width: 10px;
+            height: 10px;
+            background: #ff4444;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 15px;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-content img,
+        .modal-content video {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* System Message */
+        .message.system {
+            justify-content: center;
+        }
+
+        .message.system .message-content {
+            background: #e0e0e0;
+            color: #666;
+            font-style: italic;
+            max-width: 80%;
+        }
+
+        /* Scrollbar */
+        .chat-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .message-content {
+                max-width: 85%;
+            }
+
+            .input-area {
+                flex-direction: column;
+            }
+
+            .text-input-area {
+                width: 100%;
+                order: 2;
+            }
+
+            .input-buttons {
+                order: 1;
+                width: 100%;
+            }
+
+            .send-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div>
+                <h2>🚌 ExamBuddy Chat</h2>
+                <div class="user-info" id="groupName">Group: Exam Discussion</div>
+            </div>
+            <div>👥 <span id="memberCount">1</span> online</div>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div class="chat-area" id="chatArea">
+            <div class="message">
+                <div class="message-content">
+                    <div class="message-sender">System</div>
+                    <div class="message-text">Welcome to ExamBuddy Chat!</div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-buttons">
+                <button class="input-btn" id="imageBtn" title="Send Image" onclick="document.getElementById('imageInput').click()">📷</button>
+                <button class="input-btn" id="videoBtn" title="Send Video" onclick="document.getElementById('videoInput').click()">🎥</button>
+                <button class="input-btn" id="fileBtn" title="Send File" onclick="document.getElementById('fileInput').click()">📎</button>
+                <button class="input-btn" id="locationBtn" title="Share Location" onclick="shareLocation()">📍</button>
+                <button class="input-btn" id="voiceBtn" title="Record Voice" onclick="toggleRecording()">🎤</button>
+            </div>
+
+            <div class="recording-indicator" id="recordingIndicator">
+                <div class="recording-dot"></div>
+                <span>Recording...</span>
+            </div>
+
+            <div class="text-input-area">
+                <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter') sendTextMessage()">
+                <button class="send-btn" onclick="sendTextMessage()">Send</button>
+            </div>
+
+            <!-- Hidden File Inputs -->
+            <input type="file" id="imageInput" accept="image/*" onchange="uploadMedia('image', this)">
+            <input type="file" id="videoInput" accept="video/*" onchange="uploadMedia('video', this)">
+            <input type="file" id="fileInput" onchange="uploadMedia('file', this)">
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="imageModal" onclick="if(event.target===this) closeModal('imageModal')">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('imageModal')">✕</button>
+            <img id="modalImage" src="" alt="Full view">
+        </div>
+    </div>
+
+    <div class="modal" id="videoModal" onclick="if(event.target===this) closeModal('videoModal')">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('videoModal')">✕</button>
+            <video id="modalVideo" controls style="max-width: 100%;">
+                <source id="videoSource" src="">
+            </video>
+        </div>
+    </div>
+
+    <div class="modal" id="mapModal" onclick="if(event.target===this) closeModal('mapModal')">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('mapModal')">✕</button>
+            <iframe id="mapFrame" style="width: 100%; height: 500px; border: none; border-radius: 15px;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // ========== USER SETUP ==========
+        let currentUser = {
+            name: localStorage.getItem('chatUserName') || null,
+            id: localStorage.getItem('chatUserId') || null
+        };
+
+        if (!currentUser.name) {
+            let name = prompt('Welcome to ExamBuddy Chat!\n\nEnter your name:', 'Traveler');
+            if (name && name.trim()) {
+                currentUser.name = name.trim();
+                currentUser.id = Date.now().toString();
+                localStorage.setItem('chatUserName', currentUser.name);
+                localStorage.setItem('chatUserId', currentUser.id);
+            } else {
+                currentUser.name = 'Traveler';
+                currentUser.id = Date.now().toString();
+            }
+        }
+
+        document.getElementById('memberCount').innerText = '1';
+        document.getElementById('groupName').innerHTML = `Group: ${currentUser.name}'s Chat`;
+
+        // ========== DATA STORAGE ==========
+        let messages = JSON.parse(localStorage.getItem('examBuddyMessages')) || [];
+
+        // ========== CLOUDINARY SETTINGS ==========
+        const CLOUD_NAME = 'dyxoualgf';
+        const UPLOAD_PRESET = 'exambuddy_preset';
+
+        // ========== VOICE RECORDING ==========
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        await uploadToCloudinary(audioBlob, 'voice');
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    document.getElementById('voiceBtn').classList.add('active');
+                    document.getElementById('recordingIndicator').classList.add('active');
+                } catch (error) {
+                    alert('Microphone access denied: ' + error.message);
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                document.getElementById('voiceBtn').classList.remove('active');
+                document.getElementById('recordingIndicator').classList.remove('active');
+            }
+        }
+
+        // ========== SHARE LOCATION ==========
+        function shareLocation() {
+            if (!navigator.geolocation) {
+                alert('Geolocation not supported');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const message = {
+                        id: Date.now(),
+                        user: currentUser.name,
+                        type: 'location',
+                        latitude: latitude,
+                        longitude: longitude,
+                        timestamp: new Date().toLocaleTimeString()
+                    };
+                    messages.push(message);
+                    localStorage.setItem('examBuddyMessages', JSON.stringify(messages));
+                    displayMessages();
+                },
+                (error) => {
+                    alert('Could not get location: ' + error.message);
+                }
+            );
+        }
+
+        // ========== UPLOAD MEDIA TO CLOUDINARY ==========
+        async function uploadMedia(type, inputElement) {
+            const file = inputElement.files[0];
+            if (!file) return;
+
+            // File size limits
+            const limits = { image: 5, video: 50, file: 10 };
+            const maxSize = limits[type] * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert(`${type.toUpperCase()} too large (max ${limits[type]}MB)`);
+                inputElement.value = '';
+                return;
+            }
+
+            // Show uploading status
+            const statusId = addSystemMessage(`📤 Uploading ${type} to Cloudinary...`);
+
+            try {
+                const url = await uploadToCloudinary(file, type);
+                removeSystemMessage(statusId);
+
+                const message = {
+                    id: Date.now(),
+                    user: currentUser.name,
+                    type: type,
+                    content: url,
+                    fileName: type === 'file' ? file.name : null,
+                    fileSize: type === 'file' ? (file.size / 1024).toFixed(2) : null,
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                messages.push(message);
+                localStorage.setItem('examBuddyMessages', JSON.stringify(messages));
+                displayMessages();
+            } catch (error) {
+                removeSystemMessage(statusId);
+                alert(`Upload failed: ${error.message}`);
+            }
+            inputElement.value = '';
+        }
+
+        async function uploadToCloudinary(file, type) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', UPLOAD_PRESET);
+            formData.append('folder', 'exambuddy');
+
+            let endpoint = 'image';
+            if (type === 'video') endpoint = 'video';
+            if (type === 'file') endpoint = 'auto';
+
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error?.message || 'Upload failed');
+            return data.secure_url;
+        }
+
+        // ========== SEND TEXT MESSAGE ==========
+        function sendTextMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const message = {
+                id: Date.now(),
+                user: currentUser.name,
+                type: 'text',
+                content: text,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            messages.push(message);
+            localStorage.setItem('examBuddyMessages', JSON.stringify(messages));
+            displayMessages();
+            input.value = '';
+        }
+
+        // ========== SYSTEM MESSAGE HELPERS ==========
+        function addSystemMessage(text) {
+            const chatArea = document.getElementById('chatArea');
+            const messageId = 'sys-' + Date.now();
+            const messageDiv = document.createElement('div');
+            messageDiv.id = messageId;
+            messageDiv.className = 'message system';
+            messageDiv.innerHTML = `<div class="message-content"><i>${text}</i></div>`;
+            chatArea.appendChild(messageDiv);
+            scrollToBottom();
+            return messageId;
+        }
+
+        function removeSystemMessage(messageId) {
+            const element = document.getElementById(messageId);
+            if (element) element.remove();
+        }
+
+        // ========== DISPLAY MESSAGES ==========
+        function displayMessages() {
+            const chatArea = document.getElementById('chatArea');
+            chatArea.innerHTML = '';
+
+            messages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.user === currentUser.name ? 'own' : ''}`;
+
+                let content = `<div class="message-content">`;
+                content += `<div class="message-sender">${escapeHtml(msg.user)}</div>`;
+
+                if (msg.type === 'text') {
+                    content += `<div class="message-text">${escapeHtml(msg.content)}</div>`;
+                } else if (msg.type === 'image') {
+                    content += `<img src="${msg.content}" class="message-image" onclick="openImageModal('${msg.content}')">`;
+                } else if (msg.type === 'video') {
+                    content += `<video class="message-video" controls><source src="${msg.content}" type="video/mp4"></video>`;
+                } else if (msg.type === 'voice') {
+                    content += `<audio controls src="${msg.content}"></audio>`;
+                } else if (msg.type === 'location') {
+                    const mapUrl = `https://www.google.com/maps?q=${msg.latitude},${msg.longitude}&z=15`;
+                    content += `
+                        <div class="location-card">
+                            <div class="location-header">📍 Location Shared</div>
+                            <div class="location-coords">
+                                Lat: ${msg.latitude.toFixed(4)}°<br>
+                                Lng: ${msg.longitude.toFixed(4)}°
+                            </div>
+                            <button class="location-btn" onclick="window.open('${mapUrl}')">View on Map</button>
+                        </div>
+                    `;
+                } else if (msg.type === 'file') {
+                    content += `
+                        <div class="file-card">
+                            <div class="file-info">
+                                <div class="file-name">📄 ${escapeHtml(msg.fileName)}</div>
+                                <div class="file-size">${msg.fileSize} KB</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                content += `<div class="message-time">${msg.timestamp}</div>`;
+                content += `</div>`;
+                messageDiv.innerHTML = content;
+                chatArea.appendChild(messageDiv);
+            });
+
+            scrollToBottom();
+        }
+
+        // ========== MODALS ==========
+        function openImageModal(imageUrl) {
+            document.getElementById('modalImage').src = imageUrl;
+            document.getElementById('imageModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // ========== UTILITIES ==========
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function scrollToBottom() {
+            const chatArea = document.getElementById('chatArea');
+            setTimeout(() => {
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }, 100);
+        }
+
+        // ========== INITIALIZE ==========
+        displayMessages();
+    </script>
+</body>
+</html>

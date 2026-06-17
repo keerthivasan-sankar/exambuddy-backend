@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamBuddy - Travel Together, Ace Together</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            overflow-x: hidden;
+        }
+        *::-webkit-scrollbar {
+            width: 8px;
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.7);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        nav.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            padding: 12px 40px;
+        }
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+        .nav-links a {
+            font-size: 0.95rem;
+            color: #6b7280;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-links a:hover {
+            color: #1a1a1a;
+        }
+        .back-home-btn {
+            background: #f0f0f0;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .back-home-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        .cta-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .hero {
+            margin-top: 80px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 60px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -5%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(118, 75, 162, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(30px); }
+        }
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .hero h1 {
+            font-size: 4.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 14px 38px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-3px);
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        .hidden {
+            display: none !important;
+        }
+        .app-container {
+            margin-top: 80px;
+            min-height: 100vh;
+            padding: 40px;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header h2 {
+            font-size: 1.5rem;
+        }
+        .user-info {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .message.own {
+            justify-content: flex-end;
+        }
+        .message-content {
+            max-width: 60%;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .message.own .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .message-sender {
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .message.own .message-sender {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .message-text {
+            word-wrap: break-word;
+        }
+        .message-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .message-image:hover {
+            opacity: 0.8;
+            transform: scale(1.02);
+        }
+        .message-video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+        .location-card {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 8px 0;
+        }
+        .message.own .location-card {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        .location-header {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .location-coords {
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        .message.own .location-coords {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .location-btn {
+            width: 100%;
+            padding: 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .location-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .message.own .location-btn {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .file-card {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            border: 1px solid #667eea;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .message.own .file-card {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        .file-info {
+            flex: 1;
+        }
+        .file-name {
+            font-weight: 600;
+            word-break: break-all;
+        }
+        .file-size {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .message.own .file-size {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .message-time {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 4px;
+        }
+        .message.own .message-time {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            border-radius: 0 0 20px 20px;
+        }
+        .input-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .input-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .input-btn:hover {
+            background: #e0e0e0;
+        }
+        .input-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .input-field {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            min-width: 200px;
+        }
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            max-height: 100px;
+        }
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .send-btn:hover {
+            transform: translateY(-2px);
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .close-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        #recordingIndicator {
+            display: none;
+            color: red;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        #recordingIndicator.active {
+            display: inline;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            .nav-links {
+                gap: 20px;
+                font-size: 0.85rem;
+            }
+            .message-content {
+                max-width: 85%;
+            }
+            .input-field {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav id="navbar">
+        <div class="logo">🎓 ExamBuddy</div>
+        <div class="nav-links">
+            <a onclick="goHome()">Home</a>
+            <a onclick="scrollToSection('features')">Features</a>
+            <button class="cta-button" onclick="showLoginForm()" id="loginBtn">Login</button>
+            <button class="cta-button" onclick="logout()" id="logoutBtn" style="display: none;">Logout</button>
+        </div>
+    </nav>
+
+    <div id="landingPage">
+        <section class="hero" id="hero">
+            <div class="hero-content">
+                <h1>Travel Together, <span class="gradient-text">Ace Together</span></h1>
+                <p>Find exam buddies from your hometown heading to the same exam center. Share travel, accommodation, and success!</p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="showLoginForm()">Get Started</button>
+                    <button class="btn-secondary" onclick="scrollToSection('features')">Learn More</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="hero" id="features" style="padding: 80px 40px; margin-top: 0;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 60px;">✨ Why Choose ExamBuddy?</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; max-width: 1200px;">
+                <div style="text-align: center; padding: 30px; border-radius: 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🤝</div>
+                    <h3 style="margin-bottom: 10px;">Find Buddies</h3>
+                    <p style="color: #6b7280;">Connect with students from your hometown taking the same exam</p>
+                </div>
+                <div style="text-align: center; padding: 30px; border-radius: 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🚗</div>
+                    <h3 style="margin-bottom: 10px;">Share Travel</h3>
+                    <p style="color: #6b7280;">Split travel costs and enjoy company during your journey</p>
+                </div>
+                <div style="text-align: center; padding: 30px; border-radius: 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">💬</div>
+                    <h3 style="margin-bottom: 10px;">Easy Chat</h3>
+                    <p style="color: #6b7280;">Chat securely with multimedia and location sharing</p>
+                </div>
+                <div style="text-align: center; padding: 30px; border-radius: 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🏠</div>
+                    <h3 style="margin-bottom: 10px;">Save on Accommodation</h3>
+                    <p style="color: #6b7280;">Find roommates and reduce your accommodation costs</p>
+                </div>
+                <div style="text-align: center; padding: 30px; border-radius: 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🎯</div>
+                    <h3 style="margin-bottom: 10px;">Study Support</h3>
+                    <p style="color: #6b7280;">Ace your exam with support from your buddy group</p>
+                </div>
+                <div style="text-align: center; padding: 30px; border-radius: 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
+                    <h3 style="margin-bottom: 10px;">Safe & Secure</h3>
+                    <p style="color: #6b7280;">Verified users and secure communication platform</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="appContent" class="app-container hidden">
+        <div id="appBody"></div>
+    </div>
+
+    <div id="chatModal" class="modal">
+        <div style="width: 95%; max-width: 900px; height: 95vh;">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div>
+                        <h2 id="chatTitle">ExamBuddy Chat</h2>
+                        <div class="user-info" id="chatUserInfo">Chat with your buddies</div>
+                    </div>
+                    <button onclick="closeChatModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✕</button>
+                </div>
+                <div class="chat-area" id="chatArea"></div>
+                <div class="input-area">
+                    <div class="input-buttons">
+                        <button class="input-btn" onclick="document.getElementById('imageInput').click()" title="Send Image">🖼️</button>
+                        <button class="input-btn" onclick="document.getElementById('videoInput').click()" title="Send Video">🎥</button>
+                        <button class="input-btn" onclick="document.getElementById('fileInput').click()" title="Send File">📎</button>
+                        <button class="input-btn" onclick="shareLocation()" title="Share Location">📍</button>
+                        <button class="input-btn" id="voiceBtn" onclick="toggleVoiceRecording()" title="Record Voice">🎤</button>
+                        <span id="recordingIndicator">⚫ Recording</span>
+                    </div>
+                    <div class="input-field">
+                        <input type="text" class="message-input" id="messageInput" placeholder="Type a message..." onkeypress="handleMessageKeypress(event)">
+                        <button class="send-btn" onclick="sendMessage()">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="modal">
+        <div class="modal-content" style="background: #000;">
+            <button class="close-btn" onclick="document.getElementById('imageModal').classList.remove('active')">✕</button>
+            <img id="modalImage" src="" style="max-width: 100%; max-height: 100%;">
+        </div>
+    </div>
+
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="document.getElementById('videoModal').classList.remove('active')">✕</button>
+            <video id="modalVideo" width="100%" height="auto" controls>
+                <source id="videoSource" src="" type="video/mp4">
+            </video>
+        </div>
+    </div>
+
+    <div id="mapModal" class="modal">
+        <div class="modal-content" style="width: 90%; height: 90%;">
+            <button class="close-btn" onclick="document.getElementById('mapModal').classList.remove('active')">✕</button>
+            <iframe id="mapFrame" width="100%" height="100%" style="border: none;"></iframe>
+        </div>
+    </div>
+
+    <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">
+    <input type="file" id="videoInput" accept="video/*" onchange="handleVideoUpload(event)">
+    <input type="file" id="fileInput" onchange="handleFileUpload(event)">
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        let allUsers = [];
+        let allExams = [];
+        let currentUser = null;
+        let messages = [];
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isGroupChat = false;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedUser = localStorage.getItem('currentExamBuddyUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                if (!currentUser.id && currentUser._id) {
+                    currentUser.id = currentUser._id;
+                }
+                await loadUserData();
+                showDashboard();
+            }
+        });
+
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        function scrollToSection(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function goHome() {
+            currentUser = null;
+            localStorage.removeItem('currentExamBuddyUser');
+            document.getElementById('appContent').classList.add('hidden');
+            document.getElementById('landingPage').classList.remove('hidden');
+            document.getElementById('loginBtn').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'none';
+            window.scrollTo(0, 0);
+        }
+
+        async function loadUserData() {
+            if (!currentUser) return;
+            
+            try {
+                const usersRes = await fetch(API_URL + '/users');
+                if (usersRes.ok) allUsers = await usersRes.json();
+                
+                const examsRes = await fetch(API_URL + '/exams?userId=' + currentUser.id);
+                if (examsRes.ok) allExams = await examsRes.json();
+                
+                const messagesRes = await fetch(API_URL + '/messages');
+                if (messagesRes.ok) messages = await messagesRes.json();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function showLoginForm() {
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('appContent').classList.remove('hidden');
+            
+            const html = `
+                <div style="max-width: 500px; margin: 0 auto;">
+                    <button class="back-home-btn" onclick="goHome()">← Back to Home</button>
+                    <h3 style="font-size: 1.8rem; margin-bottom: 30px;">Create Your Account</h3>
+                    
+                    <div class="form-group">
+                        <label>📱 Mobile Number</label>
+                        <input type="tel" id="mobile" placeholder="10-digit mobile number" maxlength="10">
+                    </div>
+
+                    <div class="form-group">
+                        <label>👤 Full Name</label>
+                        <input type="text" id="name" placeholder="Your name">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>⚧ Gender</label>
+                            <select id="gender">
+                                <option value="">Select</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>🏠 Home City</label>
+                            <input type="text" id="homeCity" placeholder="e.g., Hosur">
+                        </div>
+                    </div>
+
+                    <button class="submit-btn" onclick="register()">Get Started</button>
+                </div>
+            `;
+            document.getElementById('appBody').innerHTML = html;
+        }
+
+        async function register() {
+            const mobile = document.getElementById('mobile').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const gender = document.getElementById('gender').value;
+            const homeCity = document.getElementById('homeCity').value.trim();
+
+            if (!mobile || !name || !homeCity) {
+                alert('Please fill all required fields!');
+                return;
+            }
+
+            if (mobile.length !== 10 || isNaN(mobile)) {
+                alert('Please enter a valid 10-digit mobile number!');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mobile, name, gender, homeCity })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                currentUser = data.user;
+                if (!currentUser.id && currentUser._id) {
+                    currentUser.id = currentUser._id;
+                }
+                localStorage.setItem('currentExamBuddyUser', JSON.stringify(currentUser));
+                
+                await loadUserData();
+                showDashboard();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function showDashboard() {
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('appContent').classList.remove('hidden');
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'block';
+
+            await loadUserData();
+
+            const userExams = allExams.filter(e => e.userId === currentUser.id);
+            const matches = findMatches();
+
+            const html = `
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <button class="back-home-btn" onclick="goHome()">← Back to Home</button>
+                    <h2 style="font-size: 2rem; margin-bottom: 30px;">Welcome, ${currentUser.name}! 👋</h2>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 40px;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 5px;">${userExams.length}</div>
+                            <div style="font-size: 0.9rem; opacity: 0.9;">Exams</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 5px;">${matches.length}</div>
+                            <div style="font-size: 0.9rem; opacity: 0.9;">Buddies</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 5px;">${messages.length}</div>
+                            <div style="font-size: 0.9rem; opacity: 0.9;">Messages</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 15px;">📚 Your Exams</h4>
+                        <div>
+                            ${userExams.length > 0 ? userExams.map(exam => `
+                                <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #e5e7eb;">
+                                    <div style="font-weight: 700; color: #1a1a1a;">${exam.examName}</div>
+                                    <div style="color: #6b7280; font-size: 0.9rem; margin-top: 8px;">📅 ${exam.examDate} • 📍 ${exam.examCity}</div>
+                                </div>
+                            `).join('') : '<p style="color: #9ca3af;">No exams registered yet</p>'}
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 15px;">👥 Your Buddies - 💬 CLICK TO CHAT</h4>
+                        <div>
+                            ${matches.length > 0 ? matches.map(match => `
+                                <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin-bottom: 10px; border: 2px solid #667eea; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: 700; color: #1a1a1a; font-size: 1.1rem;">${match.buddyUser.name}</div>
+                                        <div style="color: #6b7280; font-size: 0.9rem; margin-top: 5px;">📍 ${match.buddyUser.homeCity} • 📱 ${match.buddyUser.mobile}</div>
+                                        <div style="color: #6b7280; font-size: 0.9rem; margin-top: 5px;">🎓 ${match.exam.examName} - ${match.exam.examCity}</div>
+                                    </div>
+                                    <button class="btn-primary" onclick="openChatModal('${match.buddyUser.name}')" style="margin: 0; font-size: 1.1rem; padding: 12px 24px;">💬 CHAT</button>
+                                </div>
+                            `).join('') : '<p style="color: #9ca3af; font-size: 1.1rem;">❌ No buddies yet. Add an exam to find matches!</p>'}
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid #667eea;">
+                        <h4 style="color: #667eea; margin-bottom: 10px;">💬 Chat Features Available:</h4>
+                        <p style="font-size: 0.9rem; color: #555; margin: 5px 0;">✅ Text Messages • 🖼️ Image Sharing • 🎥 Video Upload • 🎤 Voice Recording • 📍 Location Sharing • 📎 File Upload</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <button class="btn-primary" onclick="showAddExamForm()" style="margin: 0; padding: 14px; font-size: 1rem;">➕ Add Exam</button>
+                        <button class="btn-primary" onclick="openGroupChat()" style="margin: 0; padding: 14px; font-size: 1rem; background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">💬 Group Chat</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('appBody').innerHTML = html;
+        }
+
+        function showAddExamForm() {
+            const html = `
+                <div style="max-width: 500px; margin: 0 auto;">
+                    <button class="back-home-btn" onclick="goHome()">← Back to Home</button>
+                    <h3 style="font-size: 1.8rem; margin-bottom: 30px;">Register for an Exam</h3>
+                    
+                    <div class="form-group">
+                        <label>📖 Exam Name</label>
+                        <select id="examName">
+                            <option value="">Select Exam</option>
+                            <option value="RRB ALP">RRB ALP</option>
+                            <option value="SSC CGL">SSC CGL</option>
+                            <option value="IBPS PO">IBPS PO</option>
+                            <option value="TNPSC">TNPSC</option>
+                            <option value="GATE">GATE</option>
+                            <option value="JEE Main">JEE Main</option>
+                            <option value="NEET">NEET</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>📅 Date</label>
+                            <input type="date" id="examDate">
+                        </div>
+                        <div class="form-group">
+                            <label>📍 City</label>
+                            <input type="text" id="examCity" placeholder="e.g., Chennai">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>🏢 Center (Optional)</label>
+                        <input type="text" id="examCenter" placeholder="School/College name">
+                    </div>
+
+                    <button class="submit-btn" onclick="addExam()">Register Exam</button>
+                    <button class="submit-btn" onclick="showDashboard()" style="background: #e5e7eb; color: #1a1a1a;">Back</button>
+                </div>
+            `;
+            document.getElementById('appBody').innerHTML = html;
+        }
+
+        async function addExam() {
+            const examName = document.getElementById('examName').value;
+            const examDate = document.getElementById('examDate').value;
+            const examCity = document.getElementById('examCity').value;
+            const examCenter = document.getElementById('examCenter').value;
+
+            if (!examName || !examDate || !examCity) {
+                alert('Please fill all required fields!');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL + '/exams', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUser.id,
+                        examName,
+                        examDate,
+                        examCity,
+                        examCenter: examCenter || ''
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to add exam');
+                }
+
+                alert('✅ Exam registered successfully!');
+                await loadUserData();
+                showDashboard();
+            } catch (error) {
+                console.error('Error adding exam:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function findMatches() {
+            if (!currentUser) return [];
+
+            const userExams = allExams.filter(e => e.userId === currentUser.id);
+            const matches = [];
+
+            userExams.forEach(exam => {
+                const buddies = allExams.filter(e => 
+                    e.userId !== currentUser.id &&
+                    e.examName === exam.examName &&
+                    e.examDate === exam.examDate &&
+                    e.examCity === exam.examCity
+                );
+
+                buddies.forEach(buddy => {
+                    const buddyUser = allUsers.find(u => u.id === buddy.userId);
+                    if (buddyUser) {
+                        matches.push({
+                            exam,
+                            buddy,
+                            buddyUser
+                        });
+                    }
+                });
+            });
+
+            return matches;
+        }
+
+        function openChatModal(buddyName) {
+            isGroupChat = false;
+            document.getElementById('chatTitle').textContent = `Chat with ${buddyName}`;
+            document.getElementById('chatUserInfo').textContent = 'Private chat';
+            displayMessages();
+            document.getElementById('chatModal').classList.add('active');
+        }
+
+        function openGroupChat() {
+            isGroupChat = true;
+            document.getElementById('chatTitle').textContent = '💬 Group Chat';
+            document.getElementById('chatUserInfo').textContent = 'Everyone can see this!';
+            displayMessages();
+            document.getElementById('chatModal').classList.add('active');
+        }
+
+        function closeChatModal() {
+            document.getElementById('chatModal').classList.remove('active');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            try {
+                const response = await fetch(API_URL + '/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user: currentUser.name,
+                        type: 'text',
+                        content: text,
+                        isGroup: isGroupChat
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to send');
+                
+                input.value = '';
+                await loadUserData();
+                displayMessages();
+                scrollToBottom();
+            } catch (error) {
+                alert('Error sending message: ' + error.message);
+            }
+        }
+
+        function handleMessageKeypress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // ========== IMAGE UPLOAD - DIRECT TO CLOUDINARY ==========
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Image too large (max 10MB)');
+                return;
+            }
+
+            const statusId = addSystemMessage('📤 Uploading image to Cloudinary...');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', 'exambuddy_preset');
+
+                const response = await fetch('https://api.cloudinary.com/v1_1/dyxoualgf/image/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'Upload failed');
+                }
+
+                removeSystemMessage(statusId);
+
+                const msgResponse = await fetch(API_URL + '/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user: currentUser.name,
+                        type: 'image',
+                        content: data.secure_url,
+                        isGroup: isGroupChat || false
+                    })
+                });
+
+                if (!msgResponse.ok) throw new Error('Failed to save message');
+
+                await loadUserData();
+                displayMessages();
+                scrollToBottom();
+                event.target.value = '';
+            } catch (error) {
+                removeSystemMessage(statusId);
+                alert('Upload failed: ' + error.message);
+            }
+        }
+
+        // ========== VIDEO UPLOAD - DIRECT TO CLOUDINARY ==========
+        async function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 50 * 1024 * 1024) {
+                alert('Video too large (max 50MB)');
+                return;
+            }
+
+            const statusId = addSystemMessage('📤 Uploading video to Cloudinary...');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', 'exambuddy_preset');
+
+                const response = await fetch('https://api.cloudinary.com/v1_1/dyxoualgf/video/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'Upload failed');
+                }
+
+                removeSystemMessage(statusId);
+
+                const msgResponse = await fetch(API_URL + '/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user: currentUser.name,
+                        type: 'video',
+                        content: data.secure_url,
+                        isGroup: isGroupChat || false
+                    })
+                });
+
+                if (!msgResponse.ok) throw new Error('Failed to save message');
+
+                await loadUserData();
+                displayMessages();
+                scrollToBottom();
+                event.target.value = '';
+            } catch (error) {
+                removeSystemMessage(statusId);
+                alert('Upload failed: ' + error.message);
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const message = {
+                id: Date.now(),
+                user: currentUser.name,
+                type: 'file',
+                fileName: file.name,
+                fileSize: (file.size / 1024).toFixed(2),
+                timestamp: new Date().toLocaleTimeString(),
+                isGroup: isGroupChat
+            };
+
+            messages.push(message);
+            localStorage.setItem('chatMessages', JSON.stringify(messages));
+            displayMessages();
+            scrollToBottom();
+            event.target.value = '';
+        }
+
+        function shareLocation() {
+            if (!navigator.geolocation) {
+                alert('Location not available in your browser');
+                return;
+            }
+
+            const statusMsg = addSystemMessage('📍 Getting your location...');
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    
+                    try {
+                        removeSystemMessage(statusMsg);
+                        
+                        const response = await fetch(API_URL + '/messages', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user: currentUser.name,
+                                type: 'location',
+                                content: `📍 Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+                                latitude: latitude,
+                                longitude: longitude,
+                                isGroup: isGroupChat || false
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Failed to share location');
+                        }
+                        
+                        await loadUserData();
+                        displayMessages();
+                        scrollToBottom();
+                    } catch (error) {
+                        removeSystemMessage(statusMsg);
+                        alert('Error sharing location: ' + error.message);
+                    }
+                },
+                (error) => {
+                    removeSystemMessage(statusMsg);
+                    let errorMsg = 'Could not get location: ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg += 'You denied permission. Please allow location access.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg += 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg += 'Location request timed out.';
+                            break;
+                        default:
+                            errorMsg += error.message;
+                    }
+                    alert(errorMsg);
+                }
+            );
+        }
+
+        async function toggleVoiceRecording() {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        const reader = new FileReader();
+                        reader.onload = async (e) => {
+                            try {
+                                const response = await fetch(API_URL + '/messages', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        user: currentUser.name,
+                                        type: 'voice',
+                                        content: e.target.result,
+                                        isGroup: isGroupChat
+                                    })
+                                });
+                                
+                                if (!response.ok) throw new Error('Failed to save voice');
+                                
+                                await loadUserData();
+                                displayMessages();
+                                scrollToBottom();
+                            } catch (error) {
+                                alert('Error saving voice: ' + error.message);
+                            }
+                        };
+                        reader.readAsDataURL(audioBlob);
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    document.getElementById('voiceBtn').classList.add('active');
+                    document.getElementById('recordingIndicator').classList.add('active');
+                } catch (error) {
+                    alert('Microphone error: ' + error.message);
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                document.getElementById('voiceBtn').classList.remove('active');
+                document.getElementById('recordingIndicator').classList.remove('active');
+            }
+        }
+
+        function addSystemMessage(text) {
+            const chatArea = document.getElementById('chatArea');
+            const messageId = 'sys-' + Date.now();
+            const messageDiv = document.createElement('div');
+            messageDiv.id = messageId;
+            messageDiv.className = 'message system';
+            messageDiv.innerHTML = `<div class="message-content"><i>${text}</i></div>`;
+            chatArea.appendChild(messageDiv);
+            scrollToBottom();
+            return messageId;
+        }
+
+        function removeSystemMessage(messageId) {
+            const element = document.getElementById(messageId);
+            if (element) element.remove();
+        }
+
+        function displayMessages() {
+            const chatArea = document.getElementById('chatArea');
+            chatArea.innerHTML = '';
+
+            messages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.user === currentUser.name ? 'own' : ''}`;
+
+                let content = `<div class="message-content">`;
+                content += `<div class="message-sender">${msg.user}</div>`;
+
+                if (msg.type === 'text') {
+                    content += `<div class="message-text">${escapeHtml(msg.content)}</div>`;
+                } else if (msg.type === 'image') {
+                    content += `<img src="${msg.content}" class="message-image" onclick="openImageModal('${msg.id}')">`;
+                } else if (msg.type === 'video') {
+                    content += `<video class="message-video" onclick="openVideoModal('${msg.id}')" controls style="cursor: pointer;">
+                        <source src="${msg.content}" type="video/mp4">
+                    </video>`;
+                } else if (msg.type === 'voice') {
+                    content += `<audio controls style="width: 100%; max-width: 300px;">
+                        <source src="${msg.content}" type="audio/mpeg">
+                    </audio>`;
+                } else if (msg.type === 'location') {
+                    const lat = msg.latitude || 0;
+                    const lng = msg.longitude || 0;
+                    const mapUrl = `https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d7772.650687893!2d${lng}!3d${lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sin!4v`;
+                    content += `
+                        <div class="location-card">
+                            <div class="location-header">📍 Location Shared</div>
+                            <div class="location-coords">
+                                <strong>Lat:</strong> ${lat.toFixed(4)}° <br>
+                                <strong>Lng:</strong> ${lng.toFixed(4)}°
+                            </div>
+                            <button class="location-btn" onclick="openMapModal('${mapUrl}')">
+                                📍 View on Map
+                            </button>
+                        </div>
+                    `;
+                } else if (msg.type === 'file') {
+                    content += `
+                        <div class="file-card">
+                            <div class="file-info">
+                                <div class="file-name">📄 ${msg.fileName}</div>
+                                <div class="file-size">${msg.fileSize} KB</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (msg.isGroup) {
+                    content += `<div style="font-size: 0.7rem; color: #27ae60; margin-top: 2px;">🌍 Group</div>`;
+                }
+
+                content += `<div class="message-time">${msg.timestamp}</div>`;
+                content += `</div>`;
+
+                messageDiv.innerHTML = content;
+                chatArea.appendChild(messageDiv);
+            });
+
+            scrollToBottom();
+        }
+
+        function openImageModal(msgId) {
+            const msg = messages.find(m => m.id == msgId);
+            if (msg && msg.type === 'image') {
+                document.getElementById('modalImage').src = msg.content;
+                document.getElementById('imageModal').classList.add('active');
+            }
+        }
+
+        function openVideoModal(msgId) {
+            const msg = messages.find(m => m.id == msgId);
+            if (msg && msg.type === 'video') {
+                document.getElementById('videoSource').src = msg.content;
+                document.getElementById('modalVideo').load();
+                document.getElementById('videoModal').classList.add('active');
+            }
+        }
+
+        function openMapModal(mapUrl) {
+            document.getElementById('mapFrame').src = mapUrl;
+            document.getElementById('mapModal').classList.add('active');
+        }
+
+        function scrollToBottom() {
+            const chatArea = document.getElementById('chatArea');
+            setTimeout(() => {
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }, 100);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentExamBuddyUser');
+            messages = [];
+            localStorage.removeItem('chatMessages');
+            document.getElementById('appContent').classList.add('hidden');
+            document.getElementById('landingPage').classList.remove('hidden');
+            document.getElementById('loginBtn').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'none';
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>

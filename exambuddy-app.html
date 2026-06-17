@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ExamBuddy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; }
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .chat-btn {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚌 ExamBuddy</h1>
+        <p>Travel Together, Ace Together</p>
+        <button onclick="openChat()" class="chat-btn">💬 Open Multimedia Chat</button>
+    </div>
+    <script>
+        function openChat() {
+            window.open('exambuddy-chat-multimedia.html', '_blank', 'width=1000,height=700');
+        }
+    </script>
+</body>
+</html>

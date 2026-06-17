@@ -1,0 +1,28 @@
+
+---
+
+## **How to Create These Files**
+
+### **Method 1: Using a Text Editor (Easiest)**
+
+1. Open **Notepad** (Windows) or **TextEdit** (Mac)
+2. Copy the code for each file
+3. Save with the correct filename in your `exambuddy-backend` folder
+
+### **Method 2: Using Command Line (Faster)**
+
+**Windows (PowerShell or CMD):**
+```bash
+# Create exambuddy-backend folder
+mkdir exambuddy-backend
+cd exambuddy-backend
+
+# Create package.json
+echo {} > package.json
+
+# Create server-simple.js
+echo // Server file > server-simple.js
+
+# Now open these files in Notepad and paste the code
+notepad package.json
+notepad server-simple.js

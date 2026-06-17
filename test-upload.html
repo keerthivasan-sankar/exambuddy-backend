@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Cloudinary Upload</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        img {
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Cloudinary Upload Test</h1>
+        <input type="file" id="fileInput" accept="image/*">
+        <button onclick="uploadImage()">Upload to Cloudinary</button>
+        <div id="status"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const CLOUD_NAME = 'dyxoualgf';
+        const UPLOAD_PRESET = 'exambuddy_preset';
+
+        async function uploadImage() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select an image first');
+                return;
+            }
+
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+            
+            statusDiv.innerHTML = '📤 Uploading to Cloudinary...';
+            statusDiv.className = '';
+            resultDiv.innerHTML = '';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', UPLOAD_PRESET);
+                formData.append('folder', 'exambuddy');
+
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'Upload failed');
+                }
+
+                statusDiv.innerHTML = '✅ Upload successful!';
+                statusDiv.className = 'success';
+                
+                resultDiv.innerHTML = `
+                    <strong>Cloudinary URL:</strong><br>
+                    <a href="${data.secure_url}" target="_blank">${data.secure_url}</a>
+                    <br><br>
+                    <img src="${data.secure_url}" alt="Uploaded image">
+                `;
+                
+            } catch (error) {
+                statusDiv.innerHTML = '❌ Error: ' + error.message;
+                statusDiv.className = 'error';
+                console.error('Upload error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
