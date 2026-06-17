@@ -331,15 +331,15 @@ app.get('/app', (req, res) => {
 // ========== START SERVER ==========
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log('\n========================================');
-    console.log('   🚀 EXAM BUDDY BACKEND READY!');
-    console.log('========================================');
-    console.log(`   📍 http://localhost:${PORT}`);
-    console.log(`   📤 http://localhost:${PORT}/api/upload`);
+// Start server - listen on all network interfaces for Railway
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n==========================================`);
+    console.log(`   🚀 EXAM BUDDY BACKEND READY!`);
+    console.log(`==========================================`);
+    console.log(`   📍 http://0.0.0.0:${PORT}`);
+    console.log(`   📤 http://0.0.0.0:${PORT}/api/upload`);
     console.log(`   ☁️  Cloudinary: Configured`);
-    console.log('========================================\n');
-    
+    console.log(`==========================================\n`);
     // Connect to MongoDB in background (don't block server startup)
     connectDB();
 });
