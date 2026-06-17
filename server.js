@@ -138,7 +138,7 @@ async function connectDB() {
 }
 
 // ========== TEST ROUTE ==========
-app.get('/', (req, res) => {
+app.get('/test', (req, res) => {
     res.send('🚀 ExamBuddy API is running!');
 });
 
