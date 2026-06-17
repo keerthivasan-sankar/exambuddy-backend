@@ -1,5 +1,16 @@
-console.log('🚀 Server starting...');
+// ========== ERROR HANDLING (MUST BE FIRST) ==========
+process.on('uncaughtException', (err) => {
+    console.log('💥 UNCAUGHT EXCEPTION:', err.message);
+    console.log('Stack:', err.stack);
+});
 
+process.on('unhandledRejection', (reason, promise) => {
+    console.log('💥 UNHANDLED REJECTION:', reason);
+});
+
+console.log('🚀 Script started');
+
+// ========== REQUIRED MODULES ==========
 const express = require('express');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
@@ -63,6 +74,7 @@ async function connectDB() {
         examsCollection = db.collection('exams');
         messagesCollection = db.collection('messages');
         console.log('📊 Database ready!');
+        return client;
     } catch (error) {
         console.log('❌ MongoDB Error:', error.message);
         console.log('⚠️ Running with in-memory fallback');
@@ -120,6 +132,7 @@ async function connectDB() {
             countDocuments: async () => memoryMessages.length
         };
         db = {};
+        console.log('✅ In-memory fallback ready');
     }
 }
 
@@ -337,15 +350,22 @@ const PORT = process.env.PORT || 5000;
 
 console.log(`🚀 Attempting to start server on port ${PORT}...`);
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('\n========================================');
-    console.log('   🚀 EXAM BUDDY BACKEND READY!');
-    console.log('========================================');
-    console.log(`   📍 http://0.0.0.0:${PORT}`);
-    console.log(`   📤 http://0.0.0.0:${PORT}/api/upload`);
-    console.log(`   ☁️  Cloudinary: Configured`);
-    console.log('========================================\n');
-    
-    // Connect to MongoDB in background
-    connectDB();
-});
+try {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log('\n========================================');
+        console.log('   🚀 EXAM BUDDY BACKEND READY!');
+        console.log('========================================');
+        console.log(`   📍 http://0.0.0.0:${PORT}`);
+        console.log(`   📤 http://0.0.0.0:${PORT}/api/upload`);
+        console.log(`   ☁️  Cloudinary: Configured`);
+        console.log('========================================\n');
+        
+        // Connect to MongoDB in background
+        connectDB().catch(err => {
+            console.log('⚠️ MongoDB connection failed, but server continues:', err.message);
+        });
+    });
+} catch (err) {
+    console.log('💥 ERROR starting server:', err.message);
+    console.log('Stack:', err.stack);
+}
