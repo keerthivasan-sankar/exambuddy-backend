@@ -331,15 +331,15 @@ app.get('/app', (req, res) => {
 // ========== START SERVER ==========
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log('\n========================================');
-        console.log('   🚀 EXAM BUDDY BACKEND READY!');
-        console.log('========================================');
-        console.log(`   📍 http://localhost:${PORT}`);
-        console.log(`   📤 http://localhost:${PORT}/api/upload`);
-        console.log(`   ☁️  Cloudinary: Configured`);
-        console.log(`   🗄️  MongoDB: Connected ✅`);
-        console.log('========================================\n');
-    });
+app.listen(PORT, () => {
+    console.log('\n========================================');
+    console.log('   🚀 EXAM BUDDY BACKEND READY!');
+    console.log('========================================');
+    console.log(`   📍 http://localhost:${PORT}`);
+    console.log(`   📤 http://localhost:${PORT}/api/upload`);
+    console.log(`   ☁️  Cloudinary: Configured`);
+    console.log('========================================\n');
+    
+    // Connect to MongoDB in background (don't block server startup)
+    connectDB();
 });
