@@ -253,31 +253,10 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ==================== CLOUDINARY UPLOAD (SIMPLEST METHOD) ====================
+// ==================== CLOUDINARY UPLOAD (FIXED - USING DATA URI) ====================
 
-// ---------- UPLOAD USING MULTER WITH CLOUDINARY STORAGE ----------
-const cloudinaryStorage = new (require('multer-storage-cloudinary').CloudinaryStorage)({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'exambuddy',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }]
-  }
-});
-
-const cloudinaryUpload = multer({ 
-  storage: cloudinaryStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only images are allowed'), false);
-    }
-  }
-});
-
-app.post('/api/upload', authMiddleware, cloudinaryUpload.single('file'), async (req, res) => {
+// ---------- MAIN UPLOAD ROUTE ----------
+app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     console.log('🔍 Upload request received');
     
@@ -285,12 +264,28 @@ app.post('/api/upload', authMiddleware, cloudinaryUpload.single('file'), async (
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    console.log('☁️ Cloudinary upload successful:', req.file.filename);
+    console.log('📁 File received:', req.file.originalname);
+    console.log('📊 File size:', req.file.size);
+    console.log('📊 MIME type:', req.file.mimetype);
+
+    // Convert buffer to base64 data URI
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    // Upload to Cloudinary using data URI
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'exambuddy',
+      use_filename: true,
+      unique_filename: true,
+      resource_type: 'auto'
+    });
+
+    console.log('☁️ Cloudinary upload successful:', result.public_id);
 
     res.json({
       message: 'File uploaded successfully',
-      fileUrl: req.file.path,
-      publicId: req.file.filename
+      fileUrl: result.secure_url,
+      publicId: result.public_id
     });
   } catch (error) {
     console.error('\n❌ Upload Error');
@@ -300,17 +295,28 @@ app.post('/api/upload', authMiddleware, cloudinaryUpload.single('file'), async (
       console.error('STACK:', error.stack);
     }
     res.status(500).json({ 
-      error: error.message || 'Upload failed'
+      error: error.message || 'Upload failed',
+      details: error.http_code ? `HTTP ${error.http_code}` : 'Unknown error'
     });
   }
 });
 
 // ---------- USER AVATAR UPLOAD ----------
-app.post('/api/users/avatar', authMiddleware, cloudinaryUpload.single('avatar'), async (req, res) => {
+app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
+
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'exambuddy/avatars',
+      use_filename: true,
+      unique_filename: true,
+      resource_type: 'auto'
+    });
 
     const user = await User.findById(req.user._id);
     
@@ -322,8 +328,8 @@ app.post('/api/users/avatar', authMiddleware, cloudinaryUpload.single('avatar'),
       }
     }
 
-    user.avatar = req.file.path;
-    user.avatarPublicId = req.file.filename;
+    user.avatar = result.secure_url;
+    user.avatarPublicId = result.public_id;
     await user.save();
 
     res.json({ 
@@ -338,11 +344,21 @@ app.post('/api/users/avatar', authMiddleware, cloudinaryUpload.single('avatar'),
 });
 
 // ---------- CHAT IMAGE UPLOAD ----------
-app.post('/api/chats/:groupId/upload', authMiddleware, cloudinaryUpload.single('image'), async (req, res) => {
+app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image uploaded' });
     }
+
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'exambuddy/chats',
+      use_filename: true,
+      unique_filename: true,
+      resource_type: 'auto'
+    });
 
     const newMessage = new Message({
       groupId: req.params.groupId,
@@ -350,8 +366,8 @@ app.post('/api/chats/:groupId/upload', authMiddleware, cloudinaryUpload.single('
       userName: req.user.name,
       message: '📷 Image',
       messageType: 'image',
-      fileUrl: req.file.path,
-      filePublicId: req.file.filename
+      fileUrl: result.secure_url,
+      filePublicId: result.public_id
     });
 
     await newMessage.save();
