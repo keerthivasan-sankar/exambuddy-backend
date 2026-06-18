@@ -6,8 +6,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
 
@@ -253,9 +251,9 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ==================== CLOUDINARY UPLOAD ROUTES ====================
+// ==================== CLOUDINARY UPLOAD (FINAL FIX) ====================
 
-// ---------- MAIN UPLOAD ROUTE (Using Stream) ----------
+// ---------- MAIN UPLOAD ROUTE ----------
 app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     console.log('🔍 Upload request received');
@@ -268,27 +266,14 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
     console.log('📊 File size:', req.file.size);
     console.log('📊 MIME type:', req.file.mimetype);
 
-    // Upload using stream - this is the most reliable method
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'exambuddy',
-          use_filename: true,
-          unique_filename: true,
-          resource_type: 'image'
-        },
-        (error, result) => {
-          if (error) {
-            console.error('❌ Cloudinary stream error:', error);
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        }
-      );
-      
-      // Write the buffer directly to the stream
-      uploadStream.end(req.file.buffer);
+    // Upload using base64 with proper formatting
+    const base64 = req.file.buffer.toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${base64}`;
+    
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'exambuddy',
+      public_id: `exam_${Date.now()}`,
+      resource_type: 'image'
     });
 
     console.log('☁️ Cloudinary upload successful:', result.public_id);
@@ -319,20 +304,13 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'exambuddy/avatars',
-          use_filename: true,
-          unique_filename: true,
-          resource_type: 'image'
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      uploadStream.end(req.file.buffer);
+    const base64 = req.file.buffer.toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${base64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'exambuddy/avatars',
+      public_id: `avatar_${req.user._id}_${Date.now()}`,
+      resource_type: 'image'
     });
 
     const user = await User.findById(req.user._id);
@@ -367,20 +345,13 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
       return res.status(400).json({ error: 'No image uploaded' });
     }
 
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'exambuddy/chats',
-          use_filename: true,
-          unique_filename: true,
-          resource_type: 'image'
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      uploadStream.end(req.file.buffer);
+    const base64 = req.file.buffer.toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${base64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'exambuddy/chats',
+      public_id: `chat_${req.params.groupId}_${Date.now()}`,
+      resource_type: 'image'
     });
 
     const newMessage = new Message({
