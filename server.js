@@ -7,6 +7,8 @@ const jwt = require('jsonwebtoken');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 
@@ -21,7 +23,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Configure Multer for Cloudinary
+// ==================== MULTER CONFIG FOR CLOUDINARY ====================
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -33,7 +35,35 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only images are allowed'), false);
+    }
+  }
+});
+
+// ==================== SIMPLE DISK STORAGE (NO CLOUDINARY) ====================
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const diskStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+
+const simpleUpload = multer({ 
+  storage: diskStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -173,74 +203,6 @@ app.get('/api/cloudinary-status', (req, res) => {
   });
 });
 
-// ---------- TEST ROUTES (NO CLOUDINARY) ----------
-app.post('/api/upload-test', authMiddleware, async (req, res) => {
-  try {
-    console.log('🔍 Upload test endpoint hit');
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-    
-    if (!req.body || Object.keys(req.body).length === 0) {
-      return res.status(400).json({ 
-        error: 'No data received',
-        message: 'Please send a multipart/form-data request with a file'
-      });
-    }
-
-    res.json({
-      message: 'Upload test successful!',
-      received: {
-        body: req.body,
-        headers: {
-          authorization: req.headers.authorization ? '✅ Present' : '❌ Missing'
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Test error:', error);
-    res.status(500).json({ 
-      error: 'Test failed', 
-      message: error.message 
-    });
-  }
-});
-
-app.post('/api/upload-multer', authMiddleware, upload.single('file'), async (req, res) => {
-  try {
-    console.log('🔍 Multer test endpoint hit');
-    console.log('File:', req.file);
-    console.log('Body:', req.body);
-    
-    if (!req.file) {
-      return res.status(400).json({ 
-        error: 'No file uploaded',
-        debug: { 
-          hasFile: false,
-          contentType: req.headers['content-type']
-        }
-      });
-    }
-
-    res.json({
-      message: 'Multer test successful!',
-      file: {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-        path: req.file.path || 'No path available'
-      }
-    });
-  } catch (error) {
-    console.error('Multer test error:', error);
-    res.status(500).json({ 
-      error: 'Multer test failed', 
-      message: error.message,
-      stack: error.stack 
-    });
-  }
-});
-
 // ---------- AUTH ROUTES ----------
 app.post('/api/auth/register', async (req, res) => {
   try {
@@ -284,7 +246,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   res.json({ user: req.user });
 });
 
-// ---------- USER AVATAR UPLOAD ----------
+// ---------- USER AVATAR UPLOAD (Cloudinary) ----------
 app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) {
@@ -308,6 +270,73 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
   } catch (error) {
     console.error('Avatar error:', error);
     res.status(500).json({ error: 'Failed to upload avatar' });
+  }
+});
+
+// ---------- SIMPLE UPLOAD (NO CLOUDINARY - USE THIS FOR TESTING) ----------
+app.post('/api/upload-simple', authMiddleware, simpleUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    res.json({
+      message: 'File uploaded successfully (simple)',
+      file: {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        filename: req.file.filename,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        path: req.file.path
+      }
+    });
+  } catch (error) {
+    console.error('Simple upload error:', error);
+    res.status(500).json({ error: 'Simple upload failed' });
+  }
+});
+
+// ---------- GENERAL UPLOAD (Cloudinary) ----------
+app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    res.json({
+      message: 'File uploaded successfully',
+      fileUrl: req.file.path,
+      publicId: req.file.filename
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+// ---------- CHAT IMAGE UPLOAD ----------
+app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+
+    const newMessage = new Message({
+      groupId: req.params.groupId,
+      userId: req.user._id,
+      userName: req.user.name,
+      message: '📷 Image',
+      messageType: 'image',
+      fileUrl: req.file.path,
+      filePublicId: req.file.filename
+    });
+
+    await newMessage.save();
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error('Chat upload error:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
   }
 });
 
@@ -451,49 +480,6 @@ app.post('/api/chats/:groupId', authMiddleware, async (req, res) => {
     res.status(201).json(newMessage);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// ---------- CHAT IMAGE UPLOAD ----------
-app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image uploaded' });
-    }
-
-    const newMessage = new Message({
-      groupId: req.params.groupId,
-      userId: req.user._id,
-      userName: req.user.name,
-      message: '📷 Image',
-      messageType: 'image',
-      fileUrl: req.file.path,
-      filePublicId: req.file.filename
-    });
-
-    await newMessage.save();
-    res.status(201).json(newMessage);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to upload image' });
-  }
-});
-
-// ---------- GENERAL UPLOAD ROUTE ----------
-app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    res.json({
-      message: 'File uploaded successfully',
-      fileUrl: req.file.path,
-      publicId: req.file.filename
-    });
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed' });
   }
 });
 
