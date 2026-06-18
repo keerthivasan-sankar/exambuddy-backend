@@ -15,6 +15,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ==================== REQUEST LOGGER ====================
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} | ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// ==================== GLOBAL PROCESS ERROR HANDLING ====================
+process.on('uncaughtException', (err) => {
+  console.error('\n❌ UNCAUGHT EXCEPTION');
+  console.error(err);
+  console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('\n❌ UNHANDLED REJECTION');
+  console.error(reason);
+  if (reason instanceof Error) {
+    console.error(reason.stack);
+  }
+});
+
 // ==================== CLOUDINARY CONFIG ====================
 console.log('☁️ Configuring Cloudinary...');
 console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME || '❌ NOT SET');
@@ -64,7 +85,9 @@ mongoose.connect(process.env.MONGODB_URI, {
   console.log('✅ MongoDB Connected successfully!');
 })
 .catch(err => {
-  console.error('❌ MongoDB connection error:', err.message);
+  console.error('\n❌ MongoDB Connection Error');
+  console.error(err);
+  console.error(err.stack);
 });
 
 // ==================== MODELS ====================
@@ -149,6 +172,8 @@ const authMiddleware = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('\n❌ Auth Error');
+    console.error(error);
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
@@ -162,17 +187,23 @@ app.get('/', (req, res) => {
 
 // ---------- DEBUG ROUTES ----------
 app.get('/api/routes', (req, res) => {
-  const routes = [];
-  app._router.stack.forEach(middleware => {
-    if (middleware.route) {
-      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
-      routes.push(`${methods} ${middleware.route.path}`);
-    }
-  });
-  res.json({
-    message: 'All registered routes',
-    routes: routes
-  });
+  try {
+    const routes = [];
+    app._router.stack.forEach(middleware => {
+      if (middleware.route) {
+        const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
+        routes.push(`${methods} ${middleware.route.path}`);
+      }
+    });
+    res.json({
+      message: 'All registered routes',
+      routes: routes
+    });
+  } catch (error) {
+    console.error('\n❌ Routes Error');
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.get('/api/cloudinary-status', (req, res) => {
@@ -217,88 +248,88 @@ app.post('/api/auth/register', async (req, res) => {
 
     res.status(201).json({ user, token, isNew: true });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Register Error');
+    console.error(error);
+    if (error instanceof Error) {
+      console.error('MESSAGE:', error.message);
+      console.error('STACK:', error.stack);
+    }
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
-  res.json({ user: req.user });
+  try {
+    res.json({ user: req.user });
+  } catch (error) {
+    console.error('\n❌ Auth Me Error');
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// ---------- CLOUDINARY UPLOAD (MANUAL METHOD - NO STORAGE ENGINE) ----------
+// ---------- CLOUDINARY UPLOAD (MANUAL METHOD) ----------
 app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     console.log('🔍 Upload request received');
     
     if (!req.file) {
-      console.log('❌ No file in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     console.log('📁 File received:', req.file.originalname);
     console.log('📂 File path:', req.file.path);
-    console.log('📊 File size:', req.file.size);
 
     // Upload to Cloudinary manually
-    try {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'exambuddy',
-        use_filename: true,
-        unique_filename: true,
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp']
-      });
-
-      console.log('☁️ Cloudinary upload successful:', result.public_id);
-
-      // Clean up temp file
-      fs.unlinkSync(req.file.path);
-
-      res.json({
-        message: 'File uploaded successfully',
-        fileUrl: result.secure_url,
-        publicId: result.public_id
-      });
-    } catch (cloudError) {
-      console.error('☁️ Cloudinary error:', cloudError);
-      // Clean up temp file
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      return res.status(500).json({ 
-        error: 'Cloudinary upload failed', 
-        message: cloudError.message 
-      });
-    }
-  } catch (error) {
-    console.error('❌ Upload error:', error);
-    res.status(500).json({ 
-      error: 'Upload failed', 
-      message: error.message 
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'exambuddy',
+      use_filename: true,
+      unique_filename: true,
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp']
     });
+
+    console.log('☁️ Cloudinary upload successful:', result.public_id);
+
+    // Clean up temp file
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      message: 'File uploaded successfully',
+      fileUrl: result.secure_url,
+      publicId: result.public_id
+    });
+  } catch (error) {
+    console.error('\n❌ Upload Error');
+    console.error(error);
+    if (error instanceof Error) {
+      console.error('MESSAGE:', error.message);
+      console.error('STACK:', error.stack);
+    }
+    // Clean up temp file
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ error: error.message || 'Upload failed' });
   }
 });
 
-// ---------- USER AVATAR UPLOAD (Cloudinary) ----------
+// ---------- USER AVATAR UPLOAD ----------
 app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Upload to Cloudinary manually
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'exambuddy/avatars',
       use_filename: true,
       unique_filename: true
     });
 
-    // Clean up temp file
     fs.unlinkSync(req.file.path);
 
     const user = await User.findById(req.user._id);
     
-    // Delete old avatar if exists
     if (user.avatarPublicId) {
       try {
         await cloudinary.uploader.destroy(user.avatarPublicId);
@@ -316,30 +347,32 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
       avatar: user.avatar 
     });
   } catch (error) {
-    console.error('Avatar error:', error);
-    // Clean up temp file if exists
+    console.error('\n❌ Avatar Error');
+    console.error(error);
+    if (error instanceof Error) {
+      console.error('MESSAGE:', error.message);
+      console.error('STACK:', error.stack);
+    }
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    res.status(500).json({ error: 'Failed to upload avatar' });
+    res.status(500).json({ error: error.message || 'Failed to upload avatar' });
   }
 });
 
-// ---------- CHAT IMAGE UPLOAD (Cloudinary) ----------
+// ---------- CHAT IMAGE UPLOAD ----------
 app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image uploaded' });
     }
 
-    // Upload to Cloudinary manually
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'exambuddy/chats',
       use_filename: true,
       unique_filename: true
     });
 
-    // Clean up temp file
     fs.unlinkSync(req.file.path);
 
     const newMessage = new Message({
@@ -355,11 +388,16 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
     await newMessage.save();
     res.status(201).json(newMessage);
   } catch (error) {
-    console.error('Chat upload error:', error);
+    console.error('\n❌ Chat Upload Error');
+    console.error(error);
+    if (error instanceof Error) {
+      console.error('MESSAGE:', error.message);
+      console.error('STACK:', error.stack);
+    }
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    res.status(500).json({ error: 'Failed to upload image' });
+    res.status(500).json({ error: error.message || 'Failed to upload image' });
   }
 });
 
@@ -382,8 +420,9 @@ app.post('/api/upload-simple', authMiddleware, upload.single('file'), async (req
       }
     });
   } catch (error) {
-    console.error('Simple upload error:', error);
-    res.status(500).json({ error: 'Simple upload failed' });
+    console.error('\n❌ Simple Upload Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Simple upload failed' });
   }
 });
 
@@ -393,7 +432,9 @@ app.get('/api/exams', authMiddleware, async (req, res) => {
     const exams = await Exam.find({ userId: req.user._id }).sort({ createdAt: -1 });
     res.json(exams);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Get Exams Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -416,7 +457,9 @@ app.post('/api/exams', authMiddleware, async (req, res) => {
     await exam.save();
     res.status(201).json(exam);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Create Exam Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -429,7 +472,9 @@ app.delete('/api/exams/:id', authMiddleware, async (req, res) => {
     await exam.deleteOne();
     res.json({ message: 'Exam deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Delete Exam Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -491,8 +536,9 @@ app.get('/api/matches', authMiddleware, async (req, res) => {
 
     res.json(uniqueMatches);
   } catch (error) {
+    console.error('\n❌ Matches Error');
     console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -504,7 +550,9 @@ app.get('/api/chats/:groupId', authMiddleware, async (req, res) => {
       .limit(100);
     res.json(messages);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Get Chat Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -526,7 +574,9 @@ app.post('/api/chats/:groupId', authMiddleware, async (req, res) => {
     await newMessage.save();
     res.status(201).json(newMessage);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Send Message Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -538,7 +588,9 @@ app.get('/api/travel-plans/exam/:examId', authMiddleware, async (req, res) => {
       .populate('participants', 'name mobile avatar');
     res.json(travelPlans);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Get Travel Plans Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -571,7 +623,9 @@ app.post('/api/travel-plans', authMiddleware, async (req, res) => {
 
     res.status(201).json(travelPlan);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Create Travel Plan Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -590,7 +644,9 @@ app.post('/api/travel-plans/:planId/join', authMiddleware, async (req, res) => {
     await travelPlan.populate('participants', 'name mobile avatar');
     res.json(travelPlan);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Join Travel Plan Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
@@ -608,13 +664,29 @@ app.get('/api/stats', async (req, res) => {
       mongodb: 'connected'
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('\n❌ Stats Error');
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
 // ---------- TEST ROUTE ----------
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
+});
+
+// ==================== GLOBAL EXPRESS ERROR HANDLER ====================
+app.use((err, req, res, next) => {
+  console.error('\n❌ EXPRESS ERROR');
+  console.error(err);
+  if (err instanceof Error) {
+    console.error('MESSAGE:', err.message);
+    console.error('STACK:', err.stack);
+  }
+  res.status(500).json({
+    success: false,
+    error: err.message || 'Internal Server Error'
+  });
 });
 
 // ==================== START SERVER ====================
