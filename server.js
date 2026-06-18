@@ -17,6 +17,9 @@ app.use(cors());
 app.use(express.json());
 
 // ==================== CLOUDINARY CONFIG ====================
+console.log('☁️ Configuring Cloudinary...');
+console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME || '❌ NOT SET');
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -297,21 +300,42 @@ app.post('/api/upload-simple', authMiddleware, simpleUpload.single('file'), asyn
   }
 });
 
-// ---------- GENERAL UPLOAD (Cloudinary) ----------
+// ---------- GENERAL UPLOAD (Cloudinary) WITH DEBUG ----------
 app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
   try {
+    console.log('🔍 Upload request received');
+    console.log('Headers:', req.headers);
+    console.log('File:', req.file);
+    
     if (!req.file) {
+      console.log('❌ No file in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    res.json({
+    console.log('✅ File received, attempting Cloudinary upload');
+    console.log('File path:', req.file.path);
+    console.log('Cloudinary config:', {
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
+      api_key: process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing',
+      api_secret: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing'
+    });
+
+    const result = {
       message: 'File uploaded successfully',
       fileUrl: req.file.path,
       publicId: req.file.filename
-    });
+    };
+
+    console.log('✅ Upload successful:', result);
+    res.json(result);
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed' });
+    console.error('❌ Upload error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Upload failed', 
+      message: error.message,
+      stack: error.stack 
+    });
   }
 });
 
