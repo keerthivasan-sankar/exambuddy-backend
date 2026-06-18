@@ -173,36 +173,68 @@ app.get('/api/cloudinary-status', (req, res) => {
   });
 });
 
-// ---------- UPLOAD DEBUG ROUTE (Now after authMiddleware is defined) ----------
-app.post('/api/upload-debug', authMiddleware, upload.single('file'), async (req, res) => {
+// ---------- TEST ROUTES (NO CLOUDINARY) ----------
+app.post('/api/upload-test', authMiddleware, async (req, res) => {
   try {
-    console.log('🔍 Upload debug:');
+    console.log('🔍 Upload test endpoint hit');
     console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
+    
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ 
+        error: 'No data received',
+        message: 'Please send a multipart/form-data request with a file'
+      });
+    }
+
+    res.json({
+      message: 'Upload test successful!',
+      received: {
+        body: req.body,
+        headers: {
+          authorization: req.headers.authorization ? '✅ Present' : '❌ Missing'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({ 
+      error: 'Test failed', 
+      message: error.message 
+    });
+  }
+});
+
+app.post('/api/upload-multer', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    console.log('🔍 Multer test endpoint hit');
     console.log('File:', req.file);
     console.log('Body:', req.body);
     
     if (!req.file) {
       return res.status(400).json({ 
-        error: 'No file uploaded', 
-        debug: { hasFile: false } 
+        error: 'No file uploaded',
+        debug: { 
+          hasFile: false,
+          contentType: req.headers['content-type']
+        }
       });
     }
 
     res.json({
-      message: 'Debug upload successful!',
-      debug: {
+      message: 'Multer test successful!',
+      file: {
         fieldname: req.file.fieldname,
         originalname: req.file.originalname,
         size: req.file.size,
         mimetype: req.file.mimetype,
-        path: req.file.path,
-        cloudinary: req.file.path ? '✅ Uploaded to Cloudinary' : '❌ Not uploaded to Cloudinary'
+        path: req.file.path || 'No path available'
       }
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('Multer test error:', error);
     res.status(500).json({ 
-      error: 'Upload failed', 
+      error: 'Multer test failed', 
       message: error.message,
       stack: error.stack 
     });
@@ -274,7 +306,7 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
       avatar: user.avatar 
     });
   } catch (error) {
-    console.error(error);
+    console.error('Avatar error:', error);
     res.status(500).json({ error: 'Failed to upload avatar' });
   }
 });
