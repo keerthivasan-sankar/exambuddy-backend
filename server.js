@@ -391,6 +391,24 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
   }
 });
 
+// ---------- GENERAL UPLOAD ROUTE ----------
+app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    res.json({
+      message: 'File uploaded successfully',
+      fileUrl: req.file.path,
+      publicId: req.file.filename
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
 // ---------- TRAVEL PLAN ROUTES ----------
 app.get('/api/travel-plans/exam/:examId', authMiddleware, async (req, res) => {
   try {
