@@ -14,6 +14,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ==================== DEBUG ROUTE ====================
+app.get('/api/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach(middleware => {
+    if (middleware.route) {
+      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
+      routes.push(`${methods} ${middleware.route.path}`);
+    }
+  });
+  res.json({
+    message: 'All registered routes',
+    routes: routes
+  });
+});
+
 // ==================== CLOUDINARY CONFIG ====================
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -33,7 +48,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -52,15 +67,12 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .then(() => {
   console.log('✅ MongoDB Connected successfully!');
-  console.log('📊 Database ready');
 })
 .catch(err => {
   console.error('❌ MongoDB connection error:', err.message);
-  console.log('Please check your MONGODB_URI and network access.');
 });
 
 // ==================== MODELS ====================
-
 // User Schema
 const userSchema = new mongoose.Schema({
   mobile: { type: String, required: true, unique: true },
@@ -124,7 +136,6 @@ const travelPlanSchema = new mongoose.Schema({
 const TravelPlan = mongoose.model('TravelPlan', travelPlanSchema);
 
 // ==================== MIDDLEWARE ====================
-
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -187,7 +198,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     res.status(201).json({ user, token, isNew: true });
   } catch (error) {
-    console.error(error);
+    console.error('Register error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
