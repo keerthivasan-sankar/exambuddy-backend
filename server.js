@@ -14,21 +14,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==================== DEBUG ROUTE ====================
-app.get('/api/routes', (req, res) => {
-  const routes = [];
-  app._router.stack.forEach(middleware => {
-    if (middleware.route) {
-      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
-      routes.push(`${methods} ${middleware.route.path}`);
-    }
-  });
-  res.json({
-    message: 'All registered routes',
-    routes: routes
-  });
-});
-
 // ==================== CLOUDINARY CONFIG ====================
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -48,13 +33,64 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
       cb(new Error('Only images are allowed'), false);
     }
+  }
+});
+
+// ==================== DEBUG ROUTE ====================
+app.get('/api/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach(middleware => {
+    if (middleware.route) {
+      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
+      routes.push(`${methods} ${middleware.route.path}`);
+    }
+  });
+  res.json({
+    message: 'All registered routes',
+    routes: routes
+  });
+});
+
+// ==================== UPLOAD DEBUG ROUTE ====================
+app.post('/api/upload-debug', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    console.log('🔍 Upload debug:');
+    console.log('Headers:', req.headers);
+    console.log('File:', req.file);
+    console.log('Body:', req.body);
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        error: 'No file uploaded', 
+        debug: { hasFile: false } 
+      });
+    }
+
+    res.json({
+      message: 'Debug upload successful!',
+      debug: {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        path: req.file.path,
+        cloudinary: req.file.path ? '✅ Uploaded to Cloudinary' : '❌ Not uploaded to Cloudinary'
+      }
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      error: 'Upload failed', 
+      message: error.message,
+      stack: error.stack 
+    });
   }
 });
 
@@ -73,6 +109,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 });
 
 // ==================== MODELS ====================
+
 // User Schema
 const userSchema = new mongoose.Schema({
   mobile: { type: String, required: true, unique: true },
@@ -135,7 +172,7 @@ const travelPlanSchema = new mongoose.Schema({
 
 const TravelPlan = mongoose.model('TravelPlan', travelPlanSchema);
 
-// ==================== MIDDLEWARE ====================
+// ==================== AUTH MIDDLEWARE ====================
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -505,6 +542,15 @@ app.get('/api/stats', async (req, res) => {
 // ---------- TEST ROUTE ----------
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
+});
+
+// ---------- CLOUDINARY STATUS ROUTE ----------
+app.get('/api/cloudinary-status', (req, res) => {
+  res.json({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
+    api_key: process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing',
+    api_secret: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing'
+  });
 });
 
 // ==================== START SERVER ====================
