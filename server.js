@@ -253,7 +253,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ==================== CLOUDINARY UPLOAD (FIXED - USING DATA URI) ====================
+// ==================== CLOUDINARY UPLOAD ROUTES ====================
 
 // ---------- MAIN UPLOAD ROUTE ----------
 app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
@@ -277,7 +277,7 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
       folder: 'exambuddy',
       use_filename: true,
       unique_filename: true,
-      resource_type: 'auto'
+      resource_type: 'image'  // ✅ Forces image format
     });
 
     console.log('☁️ Cloudinary upload successful:', result.public_id);
@@ -315,7 +315,7 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
       folder: 'exambuddy/avatars',
       use_filename: true,
       unique_filename: true,
-      resource_type: 'auto'
+      resource_type: 'image'  // ✅ Forces image format
     });
 
     const user = await User.findById(req.user._id);
@@ -357,7 +357,7 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
       folder: 'exambuddy/chats',
       use_filename: true,
       unique_filename: true,
-      resource_type: 'auto'
+      resource_type: 'image'  // ✅ Forces image format
     });
 
     const newMessage = new Message({
