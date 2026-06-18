@@ -46,24 +46,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ==================== MULTER CONFIG ====================
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
+// ==================== MULTER CONFIG (Memory Storage for Buffer) ====================
+const upload = multer({
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -268,7 +253,9 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ---------- CLOUDINARY UPLOAD (FIXED) ----------
+// ==================== UPLOAD ROUTES ====================
+
+// ---------- CLOUDINARY UPLOAD (Using Buffer) ----------
 app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     console.log('🔍 Upload request received');
@@ -278,22 +265,21 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
     }
 
     console.log('📁 File received:', req.file.originalname);
-    console.log('📂 File path:', req.file.path);
+    console.log('📊 File size:', req.file.size);
     console.log('📊 MIME type:', req.file.mimetype);
 
-    // Upload to Cloudinary with explicit format
-    const result = await cloudinary.uploader.upload(req.file.path, {
+    // Convert buffer to base64
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    // Upload to Cloudinary using data URI
+    const result = await cloudinary.uploader.upload(dataURI, {
       folder: 'exambuddy',
       use_filename: true,
-      unique_filename: true,
-      resource_type: 'image',
-      format: 'jpg'
+      unique_filename: true
     });
 
     console.log('☁️ Cloudinary upload successful:', result.public_id);
-
-    // Clean up temp file
-    fs.unlinkSync(req.file.path);
 
     res.json({
       message: 'File uploaded successfully',
@@ -306,10 +292,6 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
     if (error instanceof Error) {
       console.error('MESSAGE:', error.message);
       console.error('STACK:', error.stack);
-    }
-    // Clean up temp file
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
     }
     res.status(500).json({ 
       error: error.message || 'Upload failed',
@@ -325,14 +307,14 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
       folder: 'exambuddy/avatars',
       use_filename: true,
-      unique_filename: true,
-      resource_type: 'image'
+      unique_filename: true
     });
-
-    fs.unlinkSync(req.file.path);
 
     const user = await User.findById(req.user._id);
     
@@ -359,9 +341,6 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
       console.error('MESSAGE:', error.message);
       console.error('STACK:', error.stack);
     }
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     res.status(500).json({ error: error.message || 'Failed to upload avatar' });
   }
 });
@@ -373,14 +352,14 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
       return res.status(400).json({ error: 'No image uploaded' });
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
       folder: 'exambuddy/chats',
       use_filename: true,
-      unique_filename: true,
-      resource_type: 'image'
+      unique_filename: true
     });
-
-    fs.unlinkSync(req.file.path);
 
     const newMessage = new Message({
       groupId: req.params.groupId,
@@ -401,9 +380,6 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
       console.error('MESSAGE:', error.message);
       console.error('STACK:', error.stack);
     }
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     res.status(500).json({ error: error.message || 'Failed to upload image' });
   }
 });
@@ -420,10 +396,8 @@ app.post('/api/upload-simple', authMiddleware, upload.single('file'), async (req
       file: {
         fieldname: req.file.fieldname,
         originalname: req.file.originalname,
-        filename: req.file.filename,
         size: req.file.size,
-        mimetype: req.file.mimetype,
-        path: req.file.path
+        mimetype: req.file.mimetype
       }
     });
   } catch (error) {
