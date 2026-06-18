@@ -46,7 +46,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ==================== MULTER CONFIG (DISK STORAGE FOR TEMP FILES) ====================
+// ==================== MULTER CONFIG ====================
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -268,7 +268,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ---------- CLOUDINARY UPLOAD (MANUAL METHOD) ----------
+// ---------- CLOUDINARY UPLOAD (FIXED) ----------
 app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     console.log('🔍 Upload request received');
@@ -279,13 +279,15 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
 
     console.log('📁 File received:', req.file.originalname);
     console.log('📂 File path:', req.file.path);
+    console.log('📊 MIME type:', req.file.mimetype);
 
-    // Upload to Cloudinary manually
+    // Upload to Cloudinary with explicit format
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'exambuddy',
       use_filename: true,
       unique_filename: true,
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp']
+      resource_type: 'image',
+      format: 'jpg'
     });
 
     console.log('☁️ Cloudinary upload successful:', result.public_id);
@@ -309,7 +311,10 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    res.status(500).json({ error: error.message || 'Upload failed' });
+    res.status(500).json({ 
+      error: error.message || 'Upload failed',
+      details: error.http_code ? `HTTP ${error.http_code}` : 'Unknown error'
+    });
   }
 });
 
@@ -323,7 +328,8 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'exambuddy/avatars',
       use_filename: true,
-      unique_filename: true
+      unique_filename: true,
+      resource_type: 'image'
     });
 
     fs.unlinkSync(req.file.path);
@@ -370,7 +376,8 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'exambuddy/chats',
       use_filename: true,
-      unique_filename: true
+      unique_filename: true,
+      resource_type: 'image'
     });
 
     fs.unlinkSync(req.file.path);
