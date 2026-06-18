@@ -43,57 +43,6 @@ const upload = multer({
   }
 });
 
-// ==================== DEBUG ROUTE ====================
-app.get('/api/routes', (req, res) => {
-  const routes = [];
-  app._router.stack.forEach(middleware => {
-    if (middleware.route) {
-      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
-      routes.push(`${methods} ${middleware.route.path}`);
-    }
-  });
-  res.json({
-    message: 'All registered routes',
-    routes: routes
-  });
-});
-
-// ==================== UPLOAD DEBUG ROUTE ====================
-app.post('/api/upload-debug', authMiddleware, upload.single('file'), async (req, res) => {
-  try {
-    console.log('🔍 Upload debug:');
-    console.log('Headers:', req.headers);
-    console.log('File:', req.file);
-    console.log('Body:', req.body);
-    
-    if (!req.file) {
-      return res.status(400).json({ 
-        error: 'No file uploaded', 
-        debug: { hasFile: false } 
-      });
-    }
-
-    res.json({
-      message: 'Debug upload successful!',
-      debug: {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-        path: req.file.path,
-        cloudinary: req.file.path ? '✅ Uploaded to Cloudinary' : '❌ Not uploaded to Cloudinary'
-      }
-    });
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ 
-      error: 'Upload failed', 
-      message: error.message,
-      stack: error.stack 
-    });
-  }
-});
-
 // ==================== MONGODB CONNECTION ====================
 console.log('Checking MONGODB_URI:', process.env.MONGODB_URI ? '✅ SET' : '❌ NOT SET');
 
@@ -199,6 +148,65 @@ const authMiddleware = async (req, res, next) => {
 // ---------- HOME ROUTE ----------
 app.get('/', (req, res) => {
   res.send('ExamBuddy API is running!');
+});
+
+// ---------- DEBUG ROUTES ----------
+app.get('/api/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach(middleware => {
+    if (middleware.route) {
+      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
+      routes.push(`${methods} ${middleware.route.path}`);
+    }
+  });
+  res.json({
+    message: 'All registered routes',
+    routes: routes
+  });
+});
+
+app.get('/api/cloudinary-status', (req, res) => {
+  res.json({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
+    api_key: process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing',
+    api_secret: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing'
+  });
+});
+
+// ---------- UPLOAD DEBUG ROUTE (Now after authMiddleware is defined) ----------
+app.post('/api/upload-debug', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    console.log('🔍 Upload debug:');
+    console.log('Headers:', req.headers);
+    console.log('File:', req.file);
+    console.log('Body:', req.body);
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        error: 'No file uploaded', 
+        debug: { hasFile: false } 
+      });
+    }
+
+    res.json({
+      message: 'Debug upload successful!',
+      debug: {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        path: req.file.path,
+        cloudinary: req.file.path ? '✅ Uploaded to Cloudinary' : '❌ Not uploaded to Cloudinary'
+      }
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      error: 'Upload failed', 
+      message: error.message,
+      stack: error.stack 
+    });
+  }
 });
 
 // ---------- AUTH ROUTES ----------
@@ -542,15 +550,6 @@ app.get('/api/stats', async (req, res) => {
 // ---------- TEST ROUTE ----------
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
-});
-
-// ---------- CLOUDINARY STATUS ROUTE ----------
-app.get('/api/cloudinary-status', (req, res) => {
-  res.json({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
-    api_key: process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing',
-    api_secret: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing'
-  });
 });
 
 // ==================== START SERVER ====================
