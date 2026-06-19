@@ -11,13 +11,28 @@ const path = require('path');
 
 const app = express();
 
-// ==================== MIDDLEWARE (CORS FIXED) ====================
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: true
-}));
+// ==================== SECURITY: BLOCK SENSITIVE FILES ====================
+app.use((req, res, next) => {
+  const blockedPaths = ['.env', '.git', 'package.json', 'package-lock.json'];
+  if (blockedPaths.some(p => req.path.includes(p))) {
+    console.log(`🛡️ Blocked access to: ${req.path}`);
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  next();
+});
+
+// ==================== MIDDLEWARE ====================
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).send('OK');
+  }
+  next();
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -45,7 +60,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // ==================== CLOUDINARY CONFIG ====================
 console.log('☁️ Configuring Cloudinary...');
-console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME || '❌ NOT SET');
+console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ NOT SET');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -53,7 +68,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ==================== MULTER CONFIG (Memory Storage) ====================
+// ==================== MULTER CONFIG ====================
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -84,7 +99,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // ==================== MODELS ====================
 
-// User Schema
 const userSchema = new mongoose.Schema({
   mobile: { type: String, required: true, unique: true },
   name: { type: String, required: true },
@@ -105,7 +119,6 @@ userSchema.pre('save', function(next) {
 
 const User = mongoose.model('User', userSchema);
 
-// Exam Schema
 const examSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   examName: { type: String, required: true },
@@ -117,7 +130,6 @@ const examSchema = new mongoose.Schema({
 
 const Exam = mongoose.model('Exam', examSchema);
 
-// Message Schema
 const messageSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   userName: { type: String, required: true },
@@ -132,7 +144,6 @@ const messageSchema = new mongoose.Schema({
 
 const Message = mongoose.model('Message', messageSchema);
 
-// Travel Plan Schema
 const travelPlanSchema = new mongoose.Schema({
   examId: { type: mongoose.Schema.Types.ObjectId, ref: 'Exam', required: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -173,12 +184,10 @@ const authMiddleware = async (req, res, next) => {
 
 // ==================== API ROUTES ====================
 
-// ---------- HOME ROUTE ----------
 app.get('/', (req, res) => {
   res.send('ExamBuddy API is running!');
 });
 
-// ---------- DEBUG ROUTES ----------
 app.get('/api/routes', (req, res) => {
   try {
     const routes = [];
@@ -188,12 +197,8 @@ app.get('/api/routes', (req, res) => {
         routes.push(`${methods} ${middleware.route.path}`);
       }
     });
-    res.json({
-      message: 'All registered routes',
-      routes: routes
-    });
+    res.json({ message: 'All registered routes', routes });
   } catch (error) {
-    console.error('\n❌ Routes Error');
     console.error(error);
     res.status(500).json({ error: error.message });
   }
@@ -243,10 +248,6 @@ app.post('/api/auth/register', async (req, res) => {
   } catch (error) {
     console.error('\n❌ Register Error');
     console.error(error);
-    if (error instanceof Error) {
-      console.error('MESSAGE:', error.message);
-      console.error('STACK:', error.stack);
-    }
     res.status(500).json({ error: error.message || 'Server error' });
   }
 });
@@ -255,22 +256,17 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
     res.json({ user: req.user });
   } catch (error) {
-    console.error('\n❌ Auth Me Error');
     console.error(error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ==================== CLOUDINARY UPLOAD ====================
-
-// ---------- MAIN UPLOAD ROUTE ----------
+// ---------- CLOUDINARY UPLOAD ----------
 app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     console.log('🔍 Upload request received');
     
-    let fileBuffer;
-    let mimeType;
-    let fileName;
+    let fileBuffer, mimeType, fileName;
     
     if (req.file) {
       fileBuffer = req.file.buffer;
@@ -315,10 +311,6 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
   } catch (error) {
     console.error('\n❌ Upload Error');
     console.error(error);
-    if (error instanceof Error) {
-      console.error('MESSAGE:', error.message);
-      console.error('STACK:', error.stack);
-    }
     res.status(500).json({ 
       error: error.message || 'Upload failed',
       details: error.http_code ? `HTTP ${error.http_code}` : 'Unknown error'
@@ -326,7 +318,6 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
   }
 });
 
-// ---------- USER AVATAR UPLOAD ----------
 app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) {
@@ -367,7 +358,6 @@ app.post('/api/users/avatar', authMiddleware, upload.single('avatar'), async (re
   }
 });
 
-// ---------- CHAT IMAGE UPLOAD ----------
 app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
@@ -401,7 +391,6 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
   }
 });
 
-// ---------- SIMPLE UPLOAD (NO CLOUDINARY) ----------
 app.post('/api/upload-simple', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -425,8 +414,6 @@ app.post('/api/upload-simple', authMiddleware, upload.single('file'), async (req
 });
 
 // ==================== MESSAGES ROUTES ====================
-
-// Get all messages
 app.get('/api/messages', authMiddleware, async (req, res) => {
   try {
     const messages = await Message.find().sort({ timestamp: 1 }).limit(100);
@@ -438,7 +425,6 @@ app.get('/api/messages', authMiddleware, async (req, res) => {
   }
 });
 
-// Send a new message
 app.post('/api/messages', authMiddleware, async (req, res) => {
   try {
     console.log('📨 Message received:', req.body);
@@ -467,11 +453,8 @@ app.post('/api/messages', authMiddleware, async (req, res) => {
 });
 
 // ==================== EXAM ROUTES ====================
-
-// Get ALL exams (for matching) - FIXED
 app.get('/api/exams', authMiddleware, async (req, res) => {
   try {
-    // Return ALL exams - no filtering by userId
     const exams = await Exam.find().sort({ createdAt: -1 });
     console.log('📚 Sending all exams:', exams.length);
     res.json(exams);
@@ -481,7 +464,6 @@ app.get('/api/exams', authMiddleware, async (req, res) => {
   }
 });
 
-// Create a new exam
 app.post('/api/exams', authMiddleware, async (req, res) => {
   try {
     const { examName, examDate, examCity, examCenter } = req.body;
@@ -507,7 +489,6 @@ app.post('/api/exams', authMiddleware, async (req, res) => {
   }
 });
 
-// Delete an exam
 app.delete('/api/exams/:id', authMiddleware, async (req, res) => {
   try {
     const exam = await Exam.findOne({ _id: req.params.id, userId: req.user._id });
@@ -607,7 +588,6 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// ---------- TEST ROUTE ----------
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
 });
