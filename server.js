@@ -113,7 +113,6 @@ const Exam = mongoose.model('Exam', examSchema);
 
 // Message Schema
 const messageSchema = new mongoose.Schema({
-  groupId: { type: String },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   userName: { type: String, required: true },
   message: { type: String, required: true },
@@ -379,7 +378,6 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
     });
 
     const newMessage = new Message({
-      groupId: req.params.groupId,
       userId: req.user._id,
       userName: req.user.name,
       message: '📷 Image',
@@ -426,6 +424,7 @@ app.post('/api/upload-simple', authMiddleware, upload.single('file'), async (req
 app.get('/api/messages', authMiddleware, async (req, res) => {
   try {
     const messages = await Message.find().sort({ timestamp: 1 }).limit(100);
+    console.log('📨 Sending messages:', messages.length);
     res.json(messages);
   } catch (error) {
     console.error('❌ Get messages error:', error);
@@ -436,7 +435,9 @@ app.get('/api/messages', authMiddleware, async (req, res) => {
 // Send a new message
 app.post('/api/messages', authMiddleware, async (req, res) => {
   try {
-    const { user, type, content, latitude, longitude } = req.body;
+    console.log('📨 Message received:', req.body);
+    
+    const { user, type, content } = req.body;
 
     if (!user || !content) {
       return res.status(400).json({ error: 'User and content are required' });
@@ -447,12 +448,11 @@ app.post('/api/messages', authMiddleware, async (req, res) => {
       userName: user,
       message: content,
       messageType: type || 'text',
-      latitude: latitude || null,
-      longitude: longitude || null,
       timestamp: new Date()
     });
 
     await newMessage.save();
+    console.log('✅ Message saved:', newMessage._id);
     res.status(201).json(newMessage);
   } catch (error) {
     console.error('❌ Send message error:', error);
@@ -460,31 +460,22 @@ app.post('/api/messages', authMiddleware, async (req, res) => {
   }
 });
 
-// Get messages for a specific chat
-app.get('/api/messages/chat/:groupId', authMiddleware, async (req, res) => {
-  try {
-    const messages = await Message.find({ groupId: req.params.groupId })
-      .sort({ timestamp: 1 })
-      .limit(100);
-    res.json(messages);
-  } catch (error) {
-    console.error('❌ Get chat messages error:', error);
-    res.status(500).json({ error: 'Failed to get chat messages' });
-  }
-});
+// ==================== EXAM ROUTES (FIXED) ====================
 
-// ---------- EXAM ROUTES ----------
+// Get ALL exams (for matching) - FIXED
 app.get('/api/exams', authMiddleware, async (req, res) => {
   try {
-    const exams = await Exam.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    // Return ALL exams - no filtering by userId
+    const exams = await Exam.find().sort({ createdAt: -1 });
+    console.log('📚 Sending all exams:', exams.length);
     res.json(exams);
   } catch (error) {
-    console.error('\n❌ Get Exams Error');
-    console.error(error);
-    res.status(500).json({ error: error.message || 'Server error' });
+    console.error('❌ Get exams error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
+// Create a new exam
 app.post('/api/exams', authMiddleware, async (req, res) => {
   try {
     const { examName, examDate, examCity, examCenter } = req.body;
@@ -510,6 +501,7 @@ app.post('/api/exams', authMiddleware, async (req, res) => {
   }
 });
 
+// Delete an exam
 app.delete('/api/exams/:id', authMiddleware, async (req, res) => {
   try {
     const exam = await Exam.findOne({ _id: req.params.id, userId: req.user._id });
@@ -584,114 +576,6 @@ app.get('/api/matches', authMiddleware, async (req, res) => {
     res.json(uniqueMatches);
   } catch (error) {
     console.error('\n❌ Matches Error');
-    console.error(error);
-    res.status(500).json({ error: error.message || 'Server error' });
-  }
-});
-
-// ---------- CHAT ROUTES ----------
-app.get('/api/chats/:groupId', authMiddleware, async (req, res) => {
-  try {
-    const messages = await Message.find({ groupId: req.params.groupId })
-      .sort({ timestamp: 1 })
-      .limit(100);
-    res.json(messages);
-  } catch (error) {
-    console.error('\n❌ Get Chat Error');
-    console.error(error);
-    res.status(500).json({ error: error.message || 'Server error' });
-  }
-});
-
-app.post('/api/chats/:groupId', authMiddleware, async (req, res) => {
-  try {
-    const { message } = req.body;
-
-    if (!message || !message.trim()) {
-      return res.status(400).json({ error: 'Message cannot be empty' });
-    }
-
-    const newMessage = new Message({
-      groupId: req.params.groupId,
-      userId: req.user._id,
-      userName: req.user.name,
-      message: message.trim()
-    });
-
-    await newMessage.save();
-    res.status(201).json(newMessage);
-  } catch (error) {
-    console.error('\n❌ Send Message Error');
-    console.error(error);
-    res.status(500).json({ error: error.message || 'Server error' });
-  }
-});
-
-// ---------- TRAVEL PLAN ROUTES ----------
-app.get('/api/travel-plans/exam/:examId', authMiddleware, async (req, res) => {
-  try {
-    const travelPlans = await TravelPlan.find({ examId: req.params.examId })
-      .populate('createdBy', 'name mobile avatar')
-      .populate('participants', 'name mobile avatar');
-    res.json(travelPlans);
-  } catch (error) {
-    console.error('\n❌ Get Travel Plans Error');
-    console.error(error);
-    res.status(500).json({ error: error.message || 'Server error' });
-  }
-});
-
-app.post('/api/travel-plans', authMiddleware, async (req, res) => {
-  try {
-    const { examId, travelMode, departureTime, departureLocation, contactInfo, notes } = req.body;
-
-    if (!examId || !travelMode) {
-      return res.status(400).json({ error: 'Exam ID and travel mode are required' });
-    }
-
-    const exam = await Exam.findOne({ _id: examId, userId: req.user._id });
-    if (!exam) {
-      return res.status(403).json({ error: 'You can only create travel plans for your own exams' });
-    }
-
-    const travelPlan = new TravelPlan({
-      examId,
-      createdBy: req.user._id,
-      travelMode,
-      departureTime,
-      departureLocation,
-      contactInfo,
-      notes,
-      participants: [req.user._id]
-    });
-
-    await travelPlan.save();
-    await travelPlan.populate('createdBy', 'name mobile avatar');
-
-    res.status(201).json(travelPlan);
-  } catch (error) {
-    console.error('\n❌ Create Travel Plan Error');
-    console.error(error);
-    res.status(500).json({ error: error.message || 'Server error' });
-  }
-});
-
-app.post('/api/travel-plans/:planId/join', authMiddleware, async (req, res) => {
-  try {
-    const travelPlan = await TravelPlan.findById(req.params.planId);
-    if (!travelPlan) {
-      return res.status(404).json({ error: 'Travel plan not found' });
-    }
-
-    if (!travelPlan.participants.includes(req.user._id)) {
-      travelPlan.participants.push(req.user._id);
-      await travelPlan.save();
-    }
-
-    await travelPlan.populate('participants', 'name mobile avatar');
-    res.json(travelPlan);
-  } catch (error) {
-    console.error('\n❌ Join Travel Plan Error');
     console.error(error);
     res.status(500).json({ error: error.message || 'Server error' });
   }
