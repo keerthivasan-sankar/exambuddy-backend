@@ -11,8 +11,14 @@ const path = require('path');
 
 const app = express();
 
-// ==================== MIDDLEWARE ====================
-app.use(cors());
+// ==================== MIDDLEWARE (CORS FIXED) ====================
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -460,7 +466,7 @@ app.post('/api/messages', authMiddleware, async (req, res) => {
   }
 });
 
-// ==================== EXAM ROUTES (FIXED) ====================
+// ==================== EXAM ROUTES ====================
 
 // Get ALL exams (for matching) - FIXED
 app.get('/api/exams', authMiddleware, async (req, res) => {
