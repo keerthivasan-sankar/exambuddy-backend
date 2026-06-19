@@ -231,41 +231,53 @@
         // ============================================================
         const API_URL = 'https://exambuddy-backend-production-07e8.up.railway.app/api';
  
-        let allUsers = [];
         let allExams = [];
         let currentUser = null;
         let messages = [];
-        let userIdField = null;  // Will store the detected field name
- 
+        let authToken = null;
+        let allUsers = []; // Will be populated from exam data
+
         // ============================================================
         //  TEST BACKEND CONNECTION
         // ============================================================
         async function testBackend() {
             try {
-                const response = await fetch(API_URL + '/health');
-                const data = await response.json();
-                console.log('✅ Backend connected:', data);
-                return true;
+                const response = await fetch(API_URL + '/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Backend connected:', data);
+                    return true;
+                } else {
+                    console.error('❌ Backend responded with status:', response.status);
+                    return false;
+                }
             } catch (error) {
                 console.error('❌ Backend connection failed:', error);
-                alert('❌ Backend connection failed!\n\nError: ' + error.message);
                 return false;
             }
         }
- 
+
         // ============================================================
         //  PAGE INITIALIZATION
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await testBackend();
+            
             const savedUser = localStorage.getItem('currentExamBuddyUser');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                if (!currentUser.id && currentUser._id) {
-                    currentUser.id = currentUser._id;
+            const savedToken = localStorage.getItem('authToken');
+            
+            if (savedUser && savedToken) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    authToken = savedToken;
+                    console.log('🔄 Restored user:', currentUser.name);
+                    console.log('🔄 User ID:', currentUser.id || currentUser._id);
+                    await loadUserData();
+                    showDashboard();
+                } catch (e) {
+                    console.error('Error restoring user:', e);
+                    logout();
                 }
-                await loadUserData();
-                showDashboard();
             }
         });
  
@@ -288,7 +300,9 @@
  
         function goHome() {
             currentUser = null;
+            authToken = null;
             localStorage.removeItem('currentExamBuddyUser');
+            localStorage.removeItem('authToken');
             document.getElementById('appContent').classList.add('hidden');
             document.getElementById('landingPage').classList.remove('hidden');
             document.getElementById('loginBtn').style.display = 'block';
@@ -297,26 +311,27 @@
         }
  
         // ============================================================
-        //  LOAD USER DATA - AUTO DETECT FIELD
+        //  LOAD USER DATA - FIXED (No /users call)
         // ============================================================
         async function loadUserData() {
-            if (!currentUser) return;
+            if (!currentUser || !authToken) {
+                console.warn('⚠️ Cannot load data: missing user or token');
+                return;
+            }
+            
             try {
                 console.log('📊 Loading user data...');
-                console.log('Current User:', currentUser);
+                console.log('👤 User:', currentUser.name);
+                console.log('🆔 User ID:', currentUser.id || currentUser._id);
+                console.log('🔑 Token:', authToken ? '✅ Present' : '❌ Missing');
                 
-                // Load all users
-                const usersRes = await fetch(API_URL + '/users');
-                if (usersRes.ok) {
-                    allUsers = await usersRes.json();
-                    console.log('👥 All users:', allUsers.length);
-                }
+                const headers = {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                };
  
-                const userId = currentUser.id || currentUser._id;
-                console.log('🔍 Current User ID:', userId);
- 
-                // Fetch ALL exams
-                const examsRes = await fetch(API_URL + '/exams');
+                // Fetch all exams (this endpoint exists)
+                const examsRes = await fetch(API_URL + '/exams', { headers });
                 if (!examsRes.ok) {
                     console.error('❌ Exams fetch failed:', examsRes.status);
                     return;
@@ -330,42 +345,53 @@
                     return;
                 }
  
-                // AUTO DETECT: Find the correct userId field name
-                const firstExam = allExamsFromServer[0];
-                console.log('🔎 First exam structure:', Object.keys(firstExam));
-                
-                const possibleFields = ['userId', 'userID', 'UserId', '_userId', 'user_id'];
-                for (const field of possibleFields) {
-                    if (field in firstExam) {
-                        userIdField = field;
-                        console.log('✅ Using field: "' + field + '"');
-                        break;
+                // Build user list from exam data
+                const userMap = new Map();
+                allExamsFromServer.forEach(exam => {
+                    if (exam.userId) {
+                        const userId = typeof exam.userId === 'object' ? exam.userId._id || exam.userId.id : exam.userId;
+                        if (userId && !userMap.has(String(userId))) {
+                            const userData = exam.userId && typeof exam.userId === 'object' ? exam.userId : { _id: userId, name: 'Unknown' };
+                            userMap.set(String(userId), userData);
+                        }
                     }
-                }
+                });
+                allUsers = Array.from(userMap.values());
+                console.log('👥 Found users from exams:', allUsers.length);
  
-                if (!userIdField) {
-                    console.error('❌ Could not find userId field! Available:', Object.keys(firstExam));
+                // Filter exams for current user
+                const userId = currentUser.id || currentUser._id;
+                if (!userId) {
+                    console.error('❌ No user ID found!');
                     allExams = [];
                     return;
                 }
+                
+                console.log('🔍 Filtering exams for user ID:', userId);
  
-                // Filter exams using the detected field
                 allExams = allExamsFromServer.filter(exam => {
-                    const examUserId = String(exam[userIdField]).trim();
-                    const currentUserId = String(userId).trim();
-                    const match = examUserId === currentUserId;
-                    if (match) {
-                        console.log('✅ Match: ' + exam.examName + ' (userId: ' + examUserId + ')');
+                    let examUserId = exam.userId;
+                    if (examUserId && typeof examUserId === 'object') {
+                        examUserId = examUserId._id || examUserId.id;
                     }
-                    return match;
+                    if (!examUserId) return false;
+                    
+                    const examUserIdStr = String(examUserId).trim();
+                    const currentUserIdStr = String(userId).trim();
+                    return examUserIdStr === currentUserIdStr;
                 });
  
                 console.log('✅ Found ' + allExams.length + ' exams for this user');
  
                 // Load messages
-                const messagesRes = await fetch(API_URL + '/messages');
-                if (messagesRes.ok) {
-                    messages = await messagesRes.json();
+                try {
+                    const messagesRes = await fetch(API_URL + '/messages', { headers });
+                    if (messagesRes.ok) {
+                        messages = await messagesRes.json();
+                        console.log('💬 Messages loaded:', messages.length);
+                    }
+                } catch (e) {
+                    console.warn('Could not load messages:', e);
                 }
                 
                 console.log('✅ Data loaded successfully');
@@ -439,13 +465,23 @@
                 if (!response.ok) throw new Error(data.error || 'Registration failed');
  
                 currentUser = data.user;
-                if (currentUser.id) currentUser._id = currentUser.id;
-                else if (currentUser._id) currentUser.id = currentUser._id;
+                authToken = data.token;
+                currentUser.token = authToken;
                 
-                console.log('✅ Registration successful:', currentUser.name);
-                console.log('User ID:', currentUser.id || currentUser._id);
+                // Ensure both ID fields are set
+                if (currentUser._id && !currentUser.id) {
+                    currentUser.id = currentUser._id;
+                } else if (currentUser.id && !currentUser._id) {
+                    currentUser._id = currentUser.id;
+                }
                 
                 localStorage.setItem('currentExamBuddyUser', JSON.stringify(currentUser));
+                localStorage.setItem('authToken', authToken);
+                
+                console.log('✅ Registration successful:', currentUser.name);
+                console.log('✅ User ID:', currentUser.id || currentUser._id);
+                console.log('✅ Token saved');
+                
                 await loadUserData();
                 showDashboard();
                 alert('✅ Registration successful!');
@@ -468,10 +504,17 @@
  
             const userId = currentUser.id || currentUser._id;
             const userExams = allExams.filter(exam => {
-                if (!userIdField) return false;
-                return String(exam[userIdField]).trim() === String(userId).trim();
+                let examUserId = exam.userId;
+                if (examUserId && typeof examUserId === 'object') {
+                    examUserId = examUserId._id || examUserId.id;
+                }
+                if (!examUserId) return false;
+                return String(examUserId).trim() === String(userId).trim();
             });
+            
             const matches = findMatches();
+            
+            console.log('📊 Dashboard: Found ' + userExams.length + ' exams for user', userId);
  
             const html = `
                 <div style="max-width: 800px; margin: 0 auto;">
@@ -592,33 +635,32 @@
  
             try {
                 const userId = currentUser.id || currentUser._id;
-                console.log('Adding exam with userId:', userId);
+                console.log('📝 Adding exam with userId:', userId);
                 
                 const response = await fetch(API_URL + '/exams', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
                     body: JSON.stringify({
                         userId: userId,
-                        examName,
-                        examDate,
-                        examCity,
+                        examName: examName,
+                        examDate: examDate,
+                        examCity: examCity,
                         examCenter: examCenter || ''
                     })
                 });
                 
                 const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to add exam');
-                }
+                if (!response.ok) throw new Error(data.error || 'Failed to add exam');
                 
                 console.log('✅ Exam added:', data);
                 alert('✅ Exam registered successfully!');
                 
-                setTimeout(() => {
-                    loadUserData();
-                    showDashboard();
-                }, 500);
+                // Reload data and refresh dashboard
+                await loadUserData();
+                showDashboard();
                 
             } catch (error) {
                 console.error('❌ Error adding exam:', error);
@@ -627,31 +669,55 @@
         }
  
         // ============================================================
-        //  FIND MATCHES
+        //  FIND MATCHES - FIXED
         // ============================================================
         function findMatches() {
-            if (!currentUser || !userIdField) return [];
+            if (!currentUser || !allExams.length) return [];
             
             const userId = currentUser.id || currentUser._id;
-            const userExams = allExams.filter(e => {
-                return String(e[userIdField]).trim() === String(userId).trim();
+            if (!userId) return [];
+            
+            // Get user's exams
+            const userExams = allExams.filter(exam => {
+                let examUserId = exam.userId;
+                if (examUserId && typeof examUserId === 'object') {
+                    examUserId = examUserId._id || examUserId.id;
+                }
+                if (!examUserId) return false;
+                return String(examUserId).trim() === String(userId).trim();
             });
             
             const matches = [];
             userExams.forEach(exam => {
                 const buddies = allExams.filter(e => {
-                    const buddyUserId = String(e[userIdField]).trim();
-                    const currentUserId = String(userId).trim();
-                    return buddyUserId !== currentUserId &&
+                    let eUserId = e.userId;
+                    if (eUserId && typeof eUserId === 'object') {
+                        eUserId = eUserId._id || eUserId.id;
+                    }
+                    if (!eUserId) return false;
+                    return String(eUserId).trim() !== String(userId).trim() &&
                         e.examName === exam.examName &&
                         e.examDate === exam.examDate &&
                         e.examCity === exam.examCity;
                 });
                 
                 buddies.forEach(buddy => {
-                    const buddyUser = allUsers.find(u => {
-                        return String(u.id || u._id).trim() === String(buddy[userIdField]).trim();
+                    let buddyUserId = buddy.userId;
+                    if (buddyUserId && typeof buddyUserId === 'object') {
+                        buddyUserId = buddyUserId._id || buddyUserId.id;
+                    }
+                    if (!buddyUserId) return;
+                    
+                    // Find or create buddy user
+                    let buddyUser = allUsers.find(u => {
+                        const uId = u._id || u.id;
+                        return uId && String(uId).trim() === String(buddyUserId).trim();
                     });
+                    
+                    if (!buddyUser && buddy.userId && typeof buddy.userId === 'object') {
+                        buddyUser = buddy.userId;
+                    }
+                    
                     if (buddyUser) {
                         matches.push({ exam, buddy, buddyUser });
                     }
@@ -686,7 +752,10 @@
             try {
                 const response = await fetch(API_URL + '/messages', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
                     body: JSON.stringify({
                         user: currentUser.name,
                         type: 'text',
@@ -746,7 +815,10 @@
                 if (!response.ok) throw new Error(data.error?.message || 'Upload failed');
                 const msgResponse = await fetch(API_URL + '/messages', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
                     body: JSON.stringify({
                         user: currentUser.name,
                         type: 'image',
@@ -779,7 +851,10 @@
                 if (!response.ok) throw new Error(data.error?.message || 'Upload failed');
                 const msgResponse = await fetch(API_URL + '/messages', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
                     body: JSON.stringify({
                         user: currentUser.name,
                         type: 'video',
@@ -822,7 +897,10 @@
                     try {
                         const response = await fetch(API_URL + '/messages', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${authToken}`
+                            },
                             body: JSON.stringify({
                                 user: currentUser.name,
                                 type: 'location',
@@ -862,7 +940,9 @@
  
         function logout() {
             currentUser = null;
+            authToken = null;
             localStorage.removeItem('currentExamBuddyUser');
+            localStorage.removeItem('authToken');
             messages = [];
             localStorage.removeItem('chatMessages');
             document.getElementById('appContent').classList.add('hidden');

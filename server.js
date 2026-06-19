@@ -113,13 +113,15 @@ const Exam = mongoose.model('Exam', examSchema);
 
 // Message Schema
 const messageSchema = new mongoose.Schema({
-  groupId: { type: String, required: true },
+  groupId: { type: String },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   userName: { type: String, required: true },
   message: { type: String, required: true },
-  messageType: { type: String, enum: ['text', 'image', 'file'], default: 'text' },
+  messageType: { type: String, enum: ['text', 'image', 'file', 'location'], default: 'text' },
   fileUrl: { type: String },
   filePublicId: { type: String },
+  latitude: { type: Number },
+  longitude: { type: Number },
   timestamp: { type: Date, default: Date.now }
 });
 
@@ -289,15 +291,13 @@ app.post('/api/upload', authMiddleware, upload.single('file'), async (req, res) 
     console.log('📊 File size:', fileBuffer.length);
     console.log('📊 MIME type:', mimeType);
 
-    // Convert to base64 data URI
     const base64 = fileBuffer.toString('base64');
     const dataURI = `data:${mimeType};base64,${base64}`;
 
-    // Upload to Cloudinary with image type
     const result = await cloudinary.uploader.upload(dataURI, {
       folder: 'exambuddy',
       public_id: `exam_${Date.now()}`,
-      resource_type: 'image'  // ✅ Forces image format
+      resource_type: 'image'
     });
 
     console.log('☁️ Cloudinary upload successful:', result.public_id);
@@ -417,6 +417,59 @@ app.post('/api/upload-simple', authMiddleware, upload.single('file'), async (req
     console.error('\n❌ Simple Upload Error');
     console.error(error);
     res.status(500).json({ error: error.message || 'Simple upload failed' });
+  }
+});
+
+// ==================== MESSAGES ROUTES ====================
+
+// Get all messages
+app.get('/api/messages', authMiddleware, async (req, res) => {
+  try {
+    const messages = await Message.find().sort({ timestamp: 1 }).limit(100);
+    res.json(messages);
+  } catch (error) {
+    console.error('❌ Get messages error:', error);
+    res.status(500).json({ error: 'Failed to get messages' });
+  }
+});
+
+// Send a new message
+app.post('/api/messages', authMiddleware, async (req, res) => {
+  try {
+    const { user, type, content, latitude, longitude } = req.body;
+
+    if (!user || !content) {
+      return res.status(400).json({ error: 'User and content are required' });
+    }
+
+    const newMessage = new Message({
+      userId: req.user._id,
+      userName: user,
+      message: content,
+      messageType: type || 'text',
+      latitude: latitude || null,
+      longitude: longitude || null,
+      timestamp: new Date()
+    });
+
+    await newMessage.save();
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error('❌ Send message error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// Get messages for a specific chat
+app.get('/api/messages/chat/:groupId', authMiddleware, async (req, res) => {
+  try {
+    const messages = await Message.find({ groupId: req.params.groupId })
+      .sort({ timestamp: 1 })
+      .limit(100);
+    res.json(messages);
+  } catch (error) {
+    console.error('❌ Get chat messages error:', error);
+    res.status(500).json({ error: 'Failed to get chat messages' });
   }
 });
 
