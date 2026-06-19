@@ -235,7 +235,7 @@
         let currentUser = null;
         let messages = [];
         let authToken = null;
-        let allUsers = []; // Will be populated from exam data
+        let allUsers = [];
 
         // ============================================================
         //  TEST BACKEND CONNECTION
@@ -311,7 +311,7 @@
         }
  
         // ============================================================
-        //  LOAD USER DATA - FIXED (No /users call)
+        //  LOAD USER DATA
         // ============================================================
         async function loadUserData() {
             if (!currentUser || !authToken) {
@@ -330,7 +330,6 @@
                     'Content-Type': 'application/json'
                 };
  
-                // Fetch all exams (this endpoint exists)
                 const examsRes = await fetch(API_URL + '/exams', { headers });
                 if (!examsRes.ok) {
                     console.error('❌ Exams fetch failed:', examsRes.status);
@@ -359,7 +358,6 @@
                 allUsers = Array.from(userMap.values());
                 console.log('👥 Found users from exams:', allUsers.length);
  
-                // Filter exams for current user
                 const userId = currentUser.id || currentUser._id;
                 if (!userId) {
                     console.error('❌ No user ID found!');
@@ -383,7 +381,6 @@
  
                 console.log('✅ Found ' + allExams.length + ' exams for this user');
  
-                // Load messages
                 try {
                     const messagesRes = await fetch(API_URL + '/messages', { headers });
                     if (messagesRes.ok) {
@@ -392,6 +389,7 @@
                     }
                 } catch (e) {
                     console.warn('Could not load messages:', e);
+                    messages = [];
                 }
                 
                 console.log('✅ Data loaded successfully');
@@ -468,7 +466,6 @@
                 authToken = data.token;
                 currentUser.token = authToken;
                 
-                // Ensure both ID fields are set
                 if (currentUser._id && !currentUser.id) {
                     currentUser.id = currentUser._id;
                 } else if (currentUser.id && !currentUser._id) {
@@ -480,7 +477,6 @@
                 
                 console.log('✅ Registration successful:', currentUser.name);
                 console.log('✅ User ID:', currentUser.id || currentUser._id);
-                console.log('✅ Token saved');
                 
                 await loadUserData();
                 showDashboard();
@@ -658,7 +654,6 @@
                 console.log('✅ Exam added:', data);
                 alert('✅ Exam registered successfully!');
                 
-                // Reload data and refresh dashboard
                 await loadUserData();
                 showDashboard();
                 
@@ -669,7 +664,7 @@
         }
  
         // ============================================================
-        //  FIND MATCHES - FIXED
+        //  FIND MATCHES
         // ============================================================
         function findMatches() {
             if (!currentUser || !allExams.length) return [];
@@ -677,7 +672,6 @@
             const userId = currentUser.id || currentUser._id;
             if (!userId) return [];
             
-            // Get user's exams
             const userExams = allExams.filter(exam => {
                 let examUserId = exam.userId;
                 if (examUserId && typeof examUserId === 'object') {
@@ -708,7 +702,6 @@
                     }
                     if (!buddyUserId) return;
                     
-                    // Find or create buddy user
                     let buddyUser = allUsers.find(u => {
                         const uId = u._id || u.id;
                         return uId && String(uId).trim() === String(buddyUserId).trim();
@@ -727,7 +720,7 @@
         }
  
         // ============================================================
-        //  CHAT FUNCTIONS
+        //  CHAT FUNCTIONS (FIXED)
         // ============================================================
         function openChatModal(buddyName) {
             document.getElementById('chatTitle').textContent = `Chat with ${buddyName}`;
@@ -748,7 +741,11 @@
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
-            if (!text) return;
+            if (!text) {
+                alert('Please type a message');
+                return;
+            }
+            
             try {
                 const response = await fetch(API_URL + '/messages', {
                     method: 'POST',
@@ -757,17 +754,23 @@
                         'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({
-                        user: currentUser.name,
+                        user: currentUser?.name || 'User',
                         type: 'text',
                         content: text
                     })
                 });
-                if (!response.ok) throw new Error('Failed to send');
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to send');
+                }
+                
                 input.value = '';
                 await loadUserData();
                 displayMessages();
                 scrollToBottom();
             } catch (error) {
+                console.error('❌ Error sending message:', error);
                 alert('Error sending message: ' + error.message);
             }
         }
@@ -782,18 +785,54 @@
         function displayMessages() {
             const chatArea = document.getElementById('chatArea');
             chatArea.innerHTML = '';
+            
+            if (!messages || messages.length === 0) {
+                chatArea.innerHTML = '<div style="text-align: center; color: #9ca3af; padding: 40px;">No messages yet. Start the conversation!</div>';
+                return;
+            }
+            
             messages.forEach(msg => {
+                if (!msg || !msg.user || !msg.message) return;
+                
                 const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${msg.user === currentUser.name ? 'own' : ''}`;
+                messageDiv.className = `message ${msg.user === currentUser?.name ? 'own' : ''}`;
+                
                 let content = `<div class="message-content">`;
-                content += `<div class="message-sender">${msg.user}</div>`;
-                content += `<div class="message-text">${escapeHtml(msg.content)}</div>`;
+                content += `<div class="message-sender">${escapeHtml(msg.user || 'Unknown')}</div>`;
+                content += `<div class="message-text">${escapeHtml(msg.message || '')}</div>`;
                 content += `<div class="message-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : 'Just now'}</div>`;
                 content += `</div>`;
+                
                 messageDiv.innerHTML = content;
                 chatArea.appendChild(messageDiv);
             });
+            
             scrollToBottom();
+        }
+ 
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+ 
+        function scrollToBottom() {
+            const chatArea = document.getElementById('chatArea');
+            setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
+        }
+ 
+        function logout() {
+            currentUser = null;
+            authToken = null;
+            localStorage.removeItem('currentExamBuddyUser');
+            localStorage.removeItem('authToken');
+            messages = [];
+            localStorage.removeItem('chatMessages');
+            document.getElementById('appContent').classList.add('hidden');
+            document.getElementById('landingPage').classList.remove('hidden');
+            document.getElementById('loginBtn').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'none';
+            window.scrollTo(0, 0);
         }
  
         // ============================================================
@@ -923,33 +962,6 @@
  
         function toggleVoiceRecording() {
             alert('Voice recording feature coming soon!');
-        }
- 
-        // ============================================================
-        //  UTILITIES
-        // ============================================================
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
- 
-        function scrollToBottom() {
-            const chatArea = document.getElementById('chatArea');
-            setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
-        }
- 
-        function logout() {
-            currentUser = null;
-            authToken = null;
-            localStorage.removeItem('currentExamBuddyUser');
-            localStorage.removeItem('authToken');
-            messages = [];
-            localStorage.removeItem('chatMessages');
-            document.getElementById('appContent').classList.add('hidden');
-            document.getElementById('landingPage').classList.remove('hidden');
-            document.getElementById('loginBtn').style.display = 'block';
-            document.getElementById('logoutBtn').style.display = 'none';
-            window.scrollTo(0, 0);
         }
     </script>
 </body>
