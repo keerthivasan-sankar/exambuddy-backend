@@ -2,9 +2,8 @@ name = "exambuddy-proxy"
 main = "src/index.js"
 compatibility_date = "2026-06-20"
 
-[assets]
-binding = "ASSETS"
-directory = ""
+# Remove the assets section entirely
+# No assets directory needed for Worker
 
 [vars]
 # Add any environment variables here if needed
