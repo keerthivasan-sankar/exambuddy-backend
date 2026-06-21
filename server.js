@@ -130,6 +130,7 @@ const examSchema = new mongoose.Schema({
 
 const Exam = mongoose.model('Exam', examSchema);
 
+// ==================== UPDATED MESSAGE SCHEMA ====================
 const messageSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   userName: { type: String, required: true },
@@ -139,8 +140,17 @@ const messageSchema = new mongoose.Schema({
   filePublicId: { type: String },
   latitude: { type: Number },
   longitude: { type: Number },
+  // NEW: Chat type fields to separate group and private messages
+  chatType: { type: String, enum: ['global', 'group', 'private'], default: 'global' },
+  groupId: { type: String, default: 'global' },
+  privateChatId: { type: String },
   timestamp: { type: Date, default: Date.now }
 });
+
+// Add indexes for better performance
+messageSchema.index({ chatType: 1, groupId: 1 });
+messageSchema.index({ chatType: 1, privateChatId: 1 });
+messageSchema.index({ timestamp: -1 });
 
 const Message = mongoose.model('Message', messageSchema);
 
@@ -379,7 +389,9 @@ app.post('/api/chats/:groupId/upload', authMiddleware, upload.single('image'), a
       message: '📷 Image',
       messageType: 'image',
       fileUrl: result.secure_url,
-      filePublicId: result.public_id
+      filePublicId: result.public_id,
+      chatType: 'group',
+      groupId: req.params.groupId || 'global'
     });
 
     await newMessage.save();
@@ -413,11 +425,41 @@ app.post('/api/upload-simple', authMiddleware, upload.single('file'), async (req
   }
 });
 
-// ==================== MESSAGES ROUTES ====================
+// ==================== FIXED MESSAGES ROUTES ====================
+
+// GET MESSAGES - Supports global, group, and private chats
 app.get('/api/messages', authMiddleware, async (req, res) => {
   try {
-    const messages = await Message.find().sort({ timestamp: 1 }).limit(100);
-    console.log('📨 Sending messages:', messages.length);
+    const { type, userId, groupId } = req.query;
+    let filter = {};
+    
+    if (type === 'private' && userId) {
+      // Private chat between current user and specified user
+      const privateChatId = [req.user._id.toString(), userId].sort().join('_');
+      filter = { 
+        chatType: 'private',
+        privateChatId: privateChatId
+      };
+      console.log(`🔒 Fetching private chat: ${privateChatId}`);
+    } else if (type === 'group') {
+      // Group chat
+      filter = { 
+        chatType: 'group',
+        groupId: groupId || 'global'
+      };
+      console.log(`👥 Fetching group chat: ${groupId || 'global'}`);
+    } else {
+      // Default: global chat (all messages)
+      filter = { chatType: 'global' };
+      console.log('🌍 Fetching global chat');
+    }
+
+    const messages = await Message.find(filter)
+      .sort({ timestamp: 1 })
+      .limit(100)
+      .populate('userId', 'name avatar');
+    
+    console.log(`📨 Sending ${messages.length} messages`);
     res.json(messages);
   } catch (error) {
     console.error('❌ Get messages error:', error);
@@ -425,30 +467,149 @@ app.get('/api/messages', authMiddleware, async (req, res) => {
   }
 });
 
+// POST MESSAGE - Supports global, group, and private chats
 app.post('/api/messages', authMiddleware, async (req, res) => {
   try {
     console.log('📨 Message received:', req.body);
     
-    const { user, type, content } = req.body;
+    const { user, content, type, chatType, targetUserId, groupId } = req.body;
 
-    if (!user || !content) {
-      return res.status(400).json({ error: 'User and content are required' });
+    // ===== FIX: Proper validation for user and content =====
+    if (!user) {
+      return res.status(400).json({ error: 'User is required' });
+    }
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Content is required' });
     }
 
-    const newMessage = new Message({
+    // Build message object
+    const messageData = {
       userId: req.user._id,
       userName: user,
-      message: content,
+      message: content.trim(),
       messageType: type || 'text',
       timestamp: new Date()
-    });
+    };
 
+    // Handle different chat types
+    if (chatType === 'private' && targetUserId) {
+      // Private message
+      const privateChatId = [req.user._id.toString(), targetUserId].sort().join('_');
+      messageData.chatType = 'private';
+      messageData.privateChatId = privateChatId;
+      messageData.groupId = privateChatId;
+      console.log(`🔒 Private message to: ${targetUserId}`);
+    } else if (chatType === 'group') {
+      // Group message
+      messageData.chatType = 'group';
+      messageData.groupId = groupId || 'global';
+      console.log(`👥 Group message in: ${groupId || 'global'}`);
+    } else {
+      // Default: global chat
+      messageData.chatType = 'global';
+      messageData.groupId = 'global';
+      console.log('🌍 Global message');
+    }
+
+    const newMessage = new Message(messageData);
     await newMessage.save();
-    console.log('✅ Message saved:', newMessage._id);
+    
+    // Populate user data before sending response
+    await newMessage.populate('userId', 'name avatar');
+    
+    console.log('✅ Message saved:', newMessage._id, 'Type:', messageData.chatType);
     res.status(201).json(newMessage);
   } catch (error) {
     console.error('❌ Send message error:', error);
     res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// ==================== GROUP CHAT SPECIFIC ROUTES ====================
+app.get('/api/chats/group', authMiddleware, async (req, res) => {
+  try {
+    const messages = await Message.find({ chatType: 'group' })
+      .sort({ timestamp: 1 })
+      .populate('userId', 'name avatar')
+      .limit(100);
+    res.json(messages);
+  } catch (error) {
+    console.error('❌ Group messages error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/chats/group', authMiddleware, async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Message cannot be empty' });
+    }
+
+    const newMessage = new Message({
+      userId: req.user._id,
+      userName: req.user.name,
+      message: message.trim(),
+      chatType: 'group',
+      groupId: 'global'
+    });
+
+    await newMessage.save();
+    await newMessage.populate('userId', 'name avatar');
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error('❌ Send group message error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== PRIVATE CHAT SPECIFIC ROUTES ====================
+app.get('/api/chats/private/:otherUserId', authMiddleware, async (req, res) => {
+  try {
+    const { otherUserId } = req.params;
+    const privateChatId = [req.user._id.toString(), otherUserId].sort().join('_');
+
+    const messages = await Message.find({ 
+      chatType: 'private',
+      privateChatId: privateChatId 
+    })
+    .sort({ timestamp: 1 })
+    .populate('userId', 'name avatar')
+    .limit(100);
+
+    res.json(messages);
+  } catch (error) {
+    console.error('❌ Private messages error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/chats/private/:otherUserId', authMiddleware, async (req, res) => {
+  try {
+    const { otherUserId } = req.params;
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Message cannot be empty' });
+    }
+
+    const privateChatId = [req.user._id.toString(), otherUserId].sort().join('_');
+
+    const newMessage = new Message({
+      userId: req.user._id,
+      userName: req.user.name,
+      message: message.trim(),
+      chatType: 'private',
+      privateChatId: privateChatId,
+      groupId: privateChatId
+    });
+
+    await newMessage.save();
+    await newMessage.populate('userId', 'name avatar');
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error('❌ Send private message error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
